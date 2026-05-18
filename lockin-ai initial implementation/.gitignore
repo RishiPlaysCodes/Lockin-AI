@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+db.sqlite3
+*.log
+verification/
+test_api.py
