@@ -1,0 +1,275 @@
+{% extends "core/base.html" %}
+
+{% block title %}AI Teacher - Focus Guardian AI{% endblock %}
+{% block nav_chat %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .chat-box {
+        height: 500px;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: rgba(10, 25, 50, 0.5);
+        border-radius: 16px;
+        border: 1px solid rgba(108, 99, 255, 0.1);
+    }
+
+    .message {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 10px;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1rem;
+    }
+
+    .message.user .message-avatar {
+        background: linear-gradient(135deg, #6c63ff, #5a52d5);
+    }
+
+    .message.assistant .message-avatar {
+        background: linear-gradient(135deg, #4ecdc4, #3db8b0);
+    }
+
+    .message-bubble {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .message.user .message-bubble {
+        background: rgba(108, 99, 255, 0.2);
+        border: 1px solid rgba(108, 99, 255, 0.3);
+        border-top-right-radius: 4px;
+    }
+
+    .message.assistant .message-bubble {
+        background: rgba(78, 205, 196, 0.1);
+        border: 1px solid rgba(78, 205, 196, 0.2);
+        border-top-left-radius: 4px;
+    }
+
+    .chat-input-area {
+        display: flex;
+        gap: 10px;
+        margin-top: 1rem;
+    }
+
+    .chat-input-area input {
+        flex: 1;
+        background: rgba(26, 26, 46, 0.8);
+        border: 1px solid rgba(108, 99, 255, 0.2);
+        border-radius: 12px;
+        padding: 14px 18px;
+        color: white;
+        font-size: 1rem;
+    }
+
+    .chat-input-area input:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+        outline: none;
+    }
+
+    .typing-indicator {
+        display: none;
+        padding: 8px 16px;
+        color: rgba(255,255,255,0.5);
+        font-style: italic;
+    }
+
+    .typing-indicator.active {
+        display: block;
+    }
+
+    .quick-prompts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+
+    .quick-prompt-btn {
+        background: rgba(108, 99, 255, 0.1);
+        border: 1px solid rgba(108, 99, 255, 0.2);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.7);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .quick-prompt-btn:hover {
+        background: rgba(108, 99, 255, 0.2);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-chat-dots-fill text-primary"></i> AI Teacher</h1>
+            <p class="text-muted mb-0">Ask doubts, explain concepts, get study help</p>
+        </div>
+        <button id="clear-chat-btn" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i> Clear Chat
+        </button>
+    </div>
+
+    <div class="chat-box" id="chat-box">
+        {% if not chat_history %}
+        <div class="message assistant">
+            <div class="message-avatar"><i class="bi bi-robot"></i></div>
+            <div class="message-bubble">
+                Hello! I'm your Focus Guardian AI Teacher. I can help you with:
+                <ul class="mt-2 mb-0">
+                    <li>Explaining difficult concepts</li>
+                    <li>Answering your study questions</li>
+                    <li>Providing focus and study tips</li>
+                    <li>Checking your understanding</li>
+                    <li>Creating study plans</li>
+                </ul>
+                How can I help you today?
+            </div>
+        </div>
+        {% else %}
+        {% for msg in chat_history %}
+        <div class="message {{ msg.role }}">
+            <div class="message-avatar">
+                {% if msg.role == "user" %}
+                <i class="bi bi-person-fill"></i>
+                {% else %}
+                <i class="bi bi-robot"></i>
+                {% endif %}
+            </div>
+            <div class="message-bubble">{{ msg.content }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="typing-indicator" id="typing-indicator">
+        <i class="bi bi-three-dots"></i> AI Teacher is thinking...
+    </div>
+
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Ask a question or explain a concept..." autocomplete="off">
+        <button id="send-btn" class="btn btn-primary">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+
+    <div class="quick-prompts">
+        <button class="quick-prompt-btn" data-prompt="Give me focus tips for studying">Focus Tips</button>
+        <button class="quick-prompt-btn" data-prompt="Help me create a study plan for today">Study Plan</button>
+        <button class="quick-prompt-btn" data-prompt="Explain the Pomodoro technique">Pomodoro</button>
+        <button class="quick-prompt-btn" data-prompt="How can I improve my concentration?">Concentration</button>
+        <button class="quick-prompt-btn" data-prompt="Quiz me on a topic">Quiz Me</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function appendMessage(content, role) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role}`;
+        const icon = role === 'user' ? 'person-fill' : 'robot';
+        msgDiv.innerHTML = `
+            <div class="message-avatar"><i class="bi bi-${icon}"></i></div>
+            <div class="message-bubble">${content.replace(/\n/g, '<br>')}</div>
+        `;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        appendMessage(message, 'user');
+        userInput.value = '';
+        sendBtn.disabled = true;
+        typingIndicator.classList.add('active');
+
+        try {
+            const data = await apiCall('/api/ai-teacher/', 'POST', { message });
+            typingIndicator.classList.remove('active');
+
+            if (data.reply) {
+                appendMessage(data.reply, 'assistant');
+            } else if (data.error) {
+                appendMessage(`Error: ${data.error}`, 'assistant');
+            }
+        } catch (err) {
+            typingIndicator.classList.remove('active');
+            appendMessage('Sorry, something went wrong. Please try again.', 'assistant');
+        }
+
+        sendBtn.disabled = false;
+        userInput.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Quick prompts
+    document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            userInput.value = btn.dataset.prompt;
+            sendMessage();
+        });
+    });
+
+    // Clear chat
+    document.getElementById('clear-chat-btn').addEventListener('click', async () => {
+        if (confirm('Clear all chat history?')) {
+            await apiCall('/api/chat/clear/', 'POST');
+            chatBox.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-avatar"><i class="bi bi-robot"></i></div>
+                    <div class="message-bubble">Chat cleared! How can I help you?</div>
+                </div>
+            `;
+        }
+    });
+
+    // Scroll to bottom on load
+    chatBox.scrollTop = chatBox.scrollHeight;
+</script>
+{% endblock %}

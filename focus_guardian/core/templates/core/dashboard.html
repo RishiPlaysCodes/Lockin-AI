@@ -1,0 +1,161 @@
+{% extends "core/base.html" %}
+{% load custom_filters %}
+
+{% block title %}Dashboard - Focus Guardian AI{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h1><i class="bi bi-grid-1x2-fill text-primary"></i> Dashboard</h1>
+        <p class="text-muted mb-0">Welcome back, {{ user.username }}! Level: <span class="text-warning">{{ profile.level }}</span></p>
+    </div>
+    {% if active_session %}
+    <a href="{% url 'timer' %}" class="btn btn-warning">
+        <i class="bi bi-stopwatch-fill"></i> Session Active - Go to Timer
+    </a>
+    {% else %}
+    <a href="{% url 'timer' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-play-fill"></i> Start Focus Session
+    </a>
+    {% endif %}
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value">{{ profile.focus_score }}</div>
+            <div class="stat-label"><i class="bi bi-lightning-charge-fill text-warning"></i> Focus Score</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value">{{ profile.total_study_time|duration_format }}</div>
+            <div class="stat-label"><i class="bi bi-clock-fill text-info"></i> Total Study</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value">{{ profile.streak_days }}</div>
+            <div class="stat-label"><i class="bi bi-fire text-danger"></i> Day Streak</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value">{{ today_minutes }}m</div>
+            <div class="stat-label"><i class="bi bi-calendar-check text-success"></i> Today</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5 class="mb-3"><i class="bi bi-graph-up text-success"></i> This Week</h5>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <span class="text-muted">Study Time</span>
+                    <h4>{{ weekly_minutes }}m</h4>
+                </div>
+                <div>
+                    <span class="text-muted">Sessions</span>
+                    <h4>{{ today_sessions_count }}</h4>
+                </div>
+                <div>
+                    <span class="text-muted">Distractions</span>
+                    <h4 class="text-danger">{{ weekly_distractions }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5 class="mb-3"><i class="bi bi-trophy-fill text-warning"></i> Badges Earned</h5>
+            {% if badges %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for badge in badges %}
+                <span class="badge bg-primary badge-pill">
+                    <i class="bi bi-{{ badge.icon }}"></i> {{ badge.get_badge_type_display }}
+                </span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Complete focus sessions to earn badges!</p>
+            {% endif %}
+            <a href="{% url 'badges' %}" class="btn btn-outline-light btn-sm mt-2">View All Badges</a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions -->
+<div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-clock-history text-info"></i> Recent Sessions</h5>
+        <a href="{% url 'reports' %}" class="btn btn-outline-primary btn-sm">View All Reports</a>
+    </div>
+    {% if recent_sessions %}
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Distractions</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in recent_sessions %}
+                <tr>
+                    <td><i class="bi bi-book"></i> {{ session.subject }}</td>
+                    <td>{{ session.start_time|date:"M d, H:i" }}</td>
+                    <td>{{ session.duration_minutes }}m</td>
+                    <td>
+                        {% if session.distraction_count > 0 %}
+                        <span class="text-danger">{{ session.distraction_count }}</span>
+                        {% else %}
+                        <span class="text-success">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if session.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Completed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-3 mb-0">No sessions yet. Start your first focus session!</p>
+    {% endif %}
+</div>
+
+<!-- Quick Links -->
+<div class="row g-3 mt-3">
+    <div class="col-md-4">
+        <a href="{% url 'chat' %}" class="card p-3 text-decoration-none text-center">
+            <i class="bi bi-chat-dots-fill text-primary fs-2"></i>
+            <h6 class="mt-2 text-light">Ask AI Teacher</h6>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'blocking' %}" class="card p-3 text-decoration-none text-center">
+            <i class="bi bi-slash-circle-fill text-danger fs-2"></i>
+            <h6 class="mt-2 text-light">Manage Blocking</h6>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'reports' %}" class="card p-3 text-decoration-none text-center">
+            <i class="bi bi-bar-chart-fill text-success fs-2"></i>
+            <h6 class="mt-2 text-light">View Reports</h6>
+        </a>
+    </div>
+</div>
+{% endblock %}

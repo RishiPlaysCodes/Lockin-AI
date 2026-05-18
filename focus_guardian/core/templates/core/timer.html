@@ -1,0 +1,392 @@
+{% extends "core/base.html" %}
+
+{% block title %}Focus Timer - Focus Guardian AI{% endblock %}
+{% block nav_timer %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timer-container {
+        text-align: center;
+        padding: 3rem 0;
+    }
+
+    .timer-display {
+        font-size: 6rem;
+        font-weight: 800;
+        font-family: 'Courier New', monospace;
+        background: linear-gradient(135deg, #6c63ff, #4ecdc4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 2rem 0;
+        transition: all 0.3s;
+    }
+
+    .timer-display.active {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+
+    .timer-ring {
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        border: 4px solid rgba(108, 99, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .timer-ring.active {
+        border-color: #4ecdc4;
+        box-shadow: 0 0 30px rgba(78, 205, 196, 0.2);
+    }
+
+    .timer-ring.warning {
+        border-color: #feca57;
+        box-shadow: 0 0 30px rgba(254, 202, 87, 0.2);
+    }
+
+    .session-setup {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .distraction-alert {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        font-size: 1.5rem;
+        text-align: center;
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .blocked-sites-bar {
+        background: rgba(255, 107, 107, 0.1);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 2rem;
+    }
+
+    .focus-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .focus-indicator.active {
+        background: rgba(78, 205, 196, 0.15);
+        color: #4ecdc4;
+        border: 1px solid rgba(78, 205, 196, 0.3);
+    }
+
+    .focus-indicator.inactive {
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.5);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="distraction-overlay" style="display: none;" class="distraction-alert">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size: 4rem;"></i>
+    <h2 class="mt-3">STAY FOCUSED!</h2>
+    <p>Get back to your studies. Every distraction costs you points.</p>
+</div>
+
+<div class="page-header text-center">
+    <h1><i class="bi bi-stopwatch-fill text-primary"></i> Focus Timer</h1>
+    <div id="focus-status" class="focus-indicator inactive mt-2">
+        <i class="bi bi-circle-fill"></i> <span>Focus Mode OFF</span>
+    </div>
+</div>
+
+<!-- Session Setup (shown when no active session) -->
+<div id="session-setup" class="session-setup" {% if active_session %}style="display:none"{% endif %}>
+    <div class="card p-4">
+        <h5 class="text-center mb-3">Configure Your Session</h5>
+        <div class="mb-3">
+            <label class="form-label">Subject</label>
+            <input type="text" id="subject-input" class="form-control" value="General Study" placeholder="e.g., Mathematics, Physics...">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Duration (minutes)</label>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary flex-fill duration-btn" data-minutes="15">15</button>
+                <button class="btn btn-outline-primary flex-fill duration-btn active" data-minutes="25">25</button>
+                <button class="btn btn-outline-primary flex-fill duration-btn" data-minutes="45">45</button>
+                <button class="btn btn-outline-primary flex-fill duration-btn" data-minutes="60">60</button>
+            </div>
+            <input type="number" id="custom-duration" class="form-control mt-2" min="1" max="180" value="25" placeholder="Or enter custom minutes">
+        </div>
+        <button id="start-btn" class="btn btn-success btn-lg w-100">
+            <i class="bi bi-play-fill"></i> Start Focus Session
+        </button>
+    </div>
+</div>
+
+<!-- Active Timer (shown during session) -->
+<div id="timer-area" class="timer-container" {% if not active_session %}style="display:none"{% endif %}>
+    <div class="timer-ring" id="timer-ring">
+        <div>
+            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="text-muted" id="session-subject">General Study</div>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-3 justify-content-center flex-wrap">
+        <button id="pause-btn" class="btn btn-warning btn-lg">
+            <i class="bi bi-pause-fill"></i> Pause
+        </button>
+        <button id="stop-btn" class="btn btn-danger btn-lg">
+            <i class="bi bi-stop-fill"></i> End Session
+        </button>
+    </div>
+
+    <!-- Distraction Simulator -->
+    <div class="mt-4">
+        <div class="card p-3" style="max-width: 400px; margin: 0 auto;">
+            <h6 class="text-center text-muted mb-2"><i class="bi bi-exclamation-triangle"></i> Distraction Simulator</h6>
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <button class="btn btn-outline-danger btn-sm distract-btn" data-app="Instagram" data-type="app_switch">Instagram</button>
+                <button class="btn btn-outline-danger btn-sm distract-btn" data-app="YouTube" data-type="app_switch">YouTube</button>
+                <button class="btn btn-outline-danger btn-sm distract-btn" data-app="Twitter/X" data-type="app_switch">Twitter/X</button>
+                <button class="btn btn-outline-warning btn-sm distract-btn" data-app="Tab Switch" data-type="tab_switch">Switch Tab</button>
+            </div>
+        </div>
+    </div>
+
+    {% if blocked_sites %}
+    <div class="blocked-sites-bar mt-4" style="max-width: 500px; margin: 2rem auto 0;">
+        <h6><i class="bi bi-shield-x text-danger"></i> Currently Blocked:</h6>
+        <div class="d-flex flex-wrap gap-2">
+            {% for site in blocked_sites %}
+            <span class="badge bg-danger">{{ site.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Session Summary Modal -->
+<div class="modal fade" id="summaryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(15, 52, 96, 0.95); border: 1px solid rgba(108, 99, 255, 0.3); border-radius: 16px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-check-circle-fill text-success"></i> Session Complete!</h5>
+            </div>
+            <div class="modal-body text-center" id="summary-content">
+                <!-- Filled by JS -->
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+                <button class="btn btn-success" onclick="location.reload()">New Session</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let timeLeft = 25 * 60;
+    let totalTime = 25 * 60;
+    let timerInterval = null;
+    let isPaused = false;
+    let sessionActive = {{ active_session|yesno:"true,false" }};
+
+    const timerDisplay = document.getElementById('timer-display');
+    const timerRing = document.getElementById('timer-ring');
+    const focusStatus = document.getElementById('focus-status');
+
+    // Duration button selection
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('custom-duration').value = btn.dataset.minutes;
+        });
+    });
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // Warning state when < 5 min left
+        if (timeLeft < 300 && timeLeft > 0) {
+            timerRing.classList.add('warning');
+        }
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            if (!isPaused) {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    endSession();
+                }
+            }
+        }, 1000);
+    }
+
+    // Start session
+    document.getElementById('start-btn').addEventListener('click', async () => {
+        const subject = document.getElementById('subject-input').value || 'General Study';
+        const duration = parseInt(document.getElementById('custom-duration').value) || 25;
+
+        const data = await apiCall('/api/session/start/', 'POST', {
+            subject: subject,
+            planned_duration: duration
+        });
+
+        if (data && data.id) {
+            sessionActive = true;
+            timeLeft = duration * 60;
+            totalTime = duration * 60;
+
+            document.getElementById('session-setup').style.display = 'none';
+            document.getElementById('timer-area').style.display = 'block';
+            document.getElementById('session-subject').textContent = subject;
+
+            timerRing.classList.add('active');
+            timerDisplay.classList.add('active');
+            focusStatus.className = 'focus-indicator active mt-2';
+            focusStatus.innerHTML = '<i class="bi bi-circle-fill"></i> <span>Focus Mode ON</span>';
+
+            updateTimerDisplay();
+            startTimer();
+        }
+    });
+
+    // Pause
+    document.getElementById('pause-btn').addEventListener('click', () => {
+        isPaused = !isPaused;
+        const btn = document.getElementById('pause-btn');
+        if (isPaused) {
+            btn.innerHTML = '<i class="bi bi-play-fill"></i> Resume';
+            btn.classList.replace('btn-warning', 'btn-success');
+            timerDisplay.classList.remove('active');
+        } else {
+            btn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+            btn.classList.replace('btn-success', 'btn-warning');
+            timerDisplay.classList.add('active');
+        }
+    });
+
+    // End session
+    document.getElementById('stop-btn').addEventListener('click', () => {
+        endSession();
+    });
+
+    async function endSession() {
+        clearInterval(timerInterval);
+        const data = await apiCall('/api/session/end/', 'POST');
+
+        if (data) {
+            sessionActive = false;
+            focusStatus.className = 'focus-indicator inactive mt-2';
+            focusStatus.innerHTML = '<i class="bi bi-circle-fill"></i> <span>Focus Mode OFF</span>';
+            timerRing.classList.remove('active', 'warning');
+            timerDisplay.classList.remove('active');
+
+            // Show summary
+            let summaryHTML = `
+                <h3 class="mb-3">${data.subject || 'Study Session'}</h3>
+                <div class="row g-3 mb-3">
+                    <div class="col-4">
+                        <div class="stat-value">${data.duration_minutes || 0}m</div>
+                        <div class="stat-label">Duration</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-value">${data.distraction_count || 0}</div>
+                        <div class="stat-label">Distractions</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-value">${data.session_score || 100}</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                </div>
+            `;
+
+            if (data.new_badges && data.new_badges.length > 0) {
+                summaryHTML += `<div class="alert alert-success"><i class="bi bi-trophy-fill"></i> New Badge: ${data.new_badges.join(', ')}</div>`;
+            }
+
+            document.getElementById('summary-content').innerHTML = summaryHTML;
+            new bootstrap.Modal(document.getElementById('summaryModal')).show();
+        }
+    }
+
+    // Distraction simulation
+    document.querySelectorAll('.distract-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!sessionActive) return;
+
+            const overlay = document.getElementById('distraction-overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => { overlay.style.display = 'none'; }, 2500);
+
+            await apiCall('/api/distraction/', 'POST', {
+                app_name: btn.dataset.app,
+                distraction_type: btn.dataset.type
+            });
+        });
+    });
+
+    // Real distraction detection - tab visibility
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && sessionActive && !isPaused) {
+            apiCall('/api/distraction/', 'POST', {
+                app_name: 'Browser Tab Switch',
+                distraction_type: 'tab_switch'
+            });
+        }
+    });
+
+    // If session already active (page reload)
+    {% if active_session %}
+    sessionActive = true;
+    timerRing.classList.add('active');
+    timerDisplay.classList.add('active');
+    focusStatus.className = 'focus-indicator active mt-2';
+    focusStatus.innerHTML = '<i class="bi bi-circle-fill"></i> <span>Focus Mode ON</span>';
+    document.getElementById('session-subject').textContent = '{{ active_session.subject }}';
+    // Calculate remaining time
+    const startTime = new Date('{{ active_session.start_time|date:"c" }}');
+    const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+    timeLeft = Math.max(0, {{ active_session.planned_duration }} * 60 - elapsed);
+    totalTime = {{ active_session.planned_duration }} * 60;
+    updateTimerDisplay();
+    startTimer();
+    {% endif %}
+</script>
+{% endblock %}

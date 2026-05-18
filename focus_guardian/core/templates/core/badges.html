@@ -1,0 +1,169 @@
+{% extends "core/base.html" %}
+{% load custom_filters %}
+
+{% block title %}Badges - Focus Guardian AI{% endblock %}
+{% block nav_badges %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge-card {
+        background: rgba(15, 52, 96, 0.5);
+        border: 1px solid rgba(108, 99, 255, 0.15);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s;
+        height: 100%;
+    }
+
+    .badge-card.earned {
+        border-color: rgba(78, 205, 196, 0.4);
+        background: rgba(78, 205, 196, 0.05);
+    }
+
+    .badge-card.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+    }
+
+    .badge-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .badge-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+
+    .badge-card.earned .badge-icon {
+        background: linear-gradient(135deg, #4ecdc4, #6c63ff);
+        color: white;
+    }
+
+    .badge-card.locked .badge-icon {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .progress-header {
+        background: rgba(15, 52, 96, 0.6);
+        border: 1px solid rgba(108, 99, 255, 0.15);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 6px solid rgba(108, 99, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        position: relative;
+    }
+
+    .progress-ring::after {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        right: -6px;
+        bottom: -6px;
+        border-radius: 50%;
+        border: 6px solid transparent;
+        border-top-color: #4ecdc4;
+        border-right-color: #6c63ff;
+        transform: rotate({{ earned_count|floatformat:0 }}deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-trophy-fill text-warning"></i> Badges & Achievements</h1>
+    <p class="text-muted mb-0">Complete challenges to earn badges and show your dedication</p>
+</div>
+
+<!-- Progress Overview -->
+<div class="progress-header">
+    <div class="progress-ring">
+        <div>
+            <h2 class="mb-0" style="background: linear-gradient(135deg, #6c63ff, #4ecdc4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                {{ earned_count }}/{{ total_count }}
+            </h2>
+        </div>
+    </div>
+    <h4>Badges Earned</h4>
+    <p class="text-muted mb-2">Level: <span class="text-warning fw-bold">{{ profile.level }}</span></p>
+    <div class="progress mx-auto" style="max-width: 300px; height: 10px; background: rgba(255,255,255,0.1);">
+        <div class="progress-bar" role="progressbar" style="width: {% widthratio earned_count total_count 100 %}%; background: linear-gradient(90deg, #6c63ff, #4ecdc4);"></div>
+    </div>
+</div>
+
+<!-- Badge Grid -->
+<div class="row g-3">
+    {% for badge in all_badges %}
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="badge-card {% if badge.earned %}earned{% else %}locked{% endif %}">
+            <div class="badge-icon">
+                {% if badge.earned %}
+                <i class="bi bi-check-circle-fill"></i>
+                {% else %}
+                <i class="bi bi-lock-fill"></i>
+                {% endif %}
+            </div>
+            <h6>{{ badge.name }}</h6>
+            <small class="text-muted">
+                {% if badge.earned %}
+                <span class="text-success">Earned!</span>
+                {% else %}
+                Keep going!
+                {% endif %}
+            </small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- How to Earn -->
+<div class="card p-4 mt-4">
+    <h5><i class="bi bi-lightbulb text-warning"></i> How to Earn Badges</h5>
+    <div class="row g-3 mt-1">
+        <div class="col-md-4">
+            <h6 class="text-primary">Streak Badges</h6>
+            <ul class="text-muted small">
+                <li>3 Day Streak - Study 3 days in a row</li>
+                <li>Week Warrior - 7 day streak</li>
+                <li>Monthly Champion - 30 day streak</li>
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h6 class="text-primary">Hours Badges</h6>
+            <ul class="text-muted small">
+                <li>5 Hours Club - Total 5h study time</li>
+                <li>20 Hours Club - Total 20h study time</li>
+                <li>50 Hours Club - Total 50h study time</li>
+                <li>Century Scholar - Total 100h study time</li>
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h6 class="text-primary">Special Badges</h6>
+            <ul class="text-muted small">
+                <li>First Session - Complete your first session</li>
+                <li>Zero Distraction - 15+ min with no distractions</li>
+                <li>Focus Master - Achieve 100 focus score</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
