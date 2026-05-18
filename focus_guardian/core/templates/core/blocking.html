@@ -3,105 +3,351 @@
 {% block title %}Blocking - Focus Guardian AI{% endblock %}
 {% block nav_blocking %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+.block-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.block-stat {
+    background: rgba(15,23,42,0.4);
+    border: 1px solid var(--fg-card-border);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.block-stat .bs-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.block-stat .bs-lbl {
+    font-size: 0.7rem;
+    color: var(--fg-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.site-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--fg-card-border);
+    background: rgba(15,23,42,0.3);
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
+}
+
+.site-item:hover {
+    border-color: rgba(108,99,255,0.2);
+    background: rgba(108,99,255,0.02);
+}
+
+.site-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.site-info { flex: 1; min-width: 0; }
+.site-info .site-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.site-info .site-url {
+    font-size: 0.72rem;
+    color: var(--fg-text-muted);
+    font-family: monospace;
+}
+
+.site-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.site-toggle {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.site-toggle.on {
+    background: var(--fg-accent);
+}
+
+.site-toggle.off {
+    background: rgba(255,255,255,0.1);
+}
+
+.site-toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    transition: left 0.3s;
+}
+
+.site-toggle.on::after { left: 21px; }
+.site-toggle.off::after { left: 3px; }
+
+.site-delete {
+    background: none;
+    border: none;
+    color: var(--fg-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.site-delete:hover {
+    color: var(--fg-accent);
+    background: rgba(255,107,107,0.1);
+}
+
+.category-section {
+    margin-bottom: 1.5rem;
+}
+
+.category-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--fg-text-muted);
+    margin-bottom: 0.75rem;
+    padding-left: 0.25rem;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.5rem;
+}
+
+.preset-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0.75rem 0.5rem;
+    border-radius: 10px;
+    border: 1px solid var(--fg-card-border);
+    background: transparent;
+    color: var(--fg-text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    border-color: var(--fg-accent);
+    color: var(--fg-accent);
+    background: rgba(255,107,107,0.04);
+}
+
+.preset-btn i { font-size: 1.2rem; }
+
+.how-it-works {
+    background: linear-gradient(135deg, rgba(108,99,255,0.04), rgba(78,205,196,0.03));
+    border: 1px solid rgba(108,99,255,0.12);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.how-it-works ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.how-it-works li {
+    padding: 0.4rem 0;
+    font-size: 0.82rem;
+    color: var(--fg-text-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.how-it-works li i {
+    color: var(--fg-primary);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-slash-circle-fill text-danger"></i> App & Site Blocking</h1>
-    <p class="text-muted mb-0">Manage sites and apps blocked during focus mode</p>
+<div class="topbar">
+    <div class="topbar-left">
+        <h1><i class="bi bi-slash-circle-fill me-2" style="color: var(--fg-accent);"></i>Site Blocking</h1>
+        <p>Manage distracting sites blocked during focus mode</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="block-stats animate-in">
+    <div class="block-stat">
+        <div class="bs-val" style="color: var(--fg-accent);">{{ blocked_sites.count }}</div>
+        <div class="bs-lbl">Total Sites</div>
+    </div>
+    <div class="block-stat">
+        <div class="bs-val" style="color: var(--fg-success);">{{ active_count }}</div>
+        <div class="bs-lbl">Active Blocks</div>
+    </div>
+    <div class="block-stat">
+        <div class="bs-val text-gradient">{{ total_blocks }}</div>
+        <div class="bs-lbl">Times Blocked</div>
+    </div>
 </div>
 
 <div class="row g-4">
-    <!-- Add New Site -->
-    <div class="col-md-4">
-        <div class="card p-4">
-            <h5 class="mb-3"><i class="bi bi-plus-circle text-success"></i> Add Blocked Site</h5>
-            <form method="post">
-                {% csrf_token %}
-                {% for field in form %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                    <small class="text-danger">{{ field.errors.0 }}</small>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                <button type="submit" class="btn btn-danger w-100">
-                    <i class="bi bi-shield-x"></i> Add to Block List
-                </button>
-            </form>
-
-            <!-- Quick Add Presets -->
-            <hr class="my-3" style="border-color: rgba(108,99,255,0.2);">
-            <h6 class="text-muted">Quick Add:</h6>
-            <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="Instagram" data-url="instagram.com" data-cat="social_media">Instagram</button>
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="Facebook" data-url="facebook.com" data-cat="social_media">Facebook</button>
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="Twitter/X" data-url="twitter.com" data-cat="social_media">Twitter</button>
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="YouTube" data-url="youtube.com" data-cat="entertainment">YouTube</button>
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="Reddit" data-url="reddit.com" data-cat="entertainment">Reddit</button>
-                <button class="btn btn-outline-danger btn-sm quick-add" data-name="TikTok" data-url="tiktok.com" data-cat="social_media">TikTok</button>
+    <!-- Add & Presets -->
+    <div class="col-lg-5 animate-in">
+        <!-- Add Form -->
+        <div class="fg-card mb-3">
+            <div class="card-body">
+                <h6 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-plus-circle me-2" style="color: var(--fg-success);"></i>Add Site to Block</h6>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<small style="color: var(--fg-accent);">{{ field.errors.0 }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn-fg-danger w-100" style="padding: 0.75rem;">
+                        <i class="bi bi-shield-x me-1"></i> Add to Block List
+                    </button>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- Blocked Sites List -->
-    <div class="col-md-8">
-        <div class="card p-4">
-            <h5 class="mb-3"><i class="bi bi-list-check text-primary"></i> Blocked Sites ({{ blocked_sites.count }})</h5>
-            {% if blocked_sites %}
-            <div class="table-responsive">
-                <table class="table table-dark table-hover">
-                    <thead>
-                        <tr>
-                            <th>Site</th>
-                            <th>URL</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for site in blocked_sites %}
-                        <tr id="site-row-{{ site.id }}">
-                            <td><strong>{{ site.name }}</strong></td>
-                            <td><code>{{ site.url }}</code></td>
-                            <td><span class="badge bg-secondary">{{ site.get_category_display }}</span></td>
-                            <td>
-                                <span class="badge {% if site.is_active %}bg-danger{% else %}bg-secondary{% endif %}" id="status-{{ site.id }}">
-                                    {% if site.is_active %}Blocked{% else %}Paused{% endif %}
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-outline-warning btn-sm toggle-site" data-id="{{ site.id }}">
-                                    <i class="bi bi-toggle-{% if site.is_active %}on{% else %}off{% endif %}"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm delete-site" data-id="{{ site.id }}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <!-- Quick Presets -->
+        <div class="fg-card mb-3">
+            <div class="card-body">
+                <h6 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-lightning me-2" style="color: var(--fg-warning);"></i>Quick Add</h6>
+                <div class="preset-grid">
+                    <button class="preset-btn" data-name="Instagram" data-url="instagram.com" data-cat="social_media">
+                        <i class="bi bi-instagram"></i>Instagram
+                    </button>
+                    <button class="preset-btn" data-name="Facebook" data-url="facebook.com" data-cat="social_media">
+                        <i class="bi bi-facebook"></i>Facebook
+                    </button>
+                    <button class="preset-btn" data-name="Twitter/X" data-url="twitter.com" data-cat="social_media">
+                        <i class="bi bi-twitter-x"></i>Twitter/X
+                    </button>
+                    <button class="preset-btn" data-name="YouTube" data-url="youtube.com" data-cat="video">
+                        <i class="bi bi-youtube"></i>YouTube
+                    </button>
+                    <button class="preset-btn" data-name="Reddit" data-url="reddit.com" data-cat="entertainment">
+                        <i class="bi bi-reddit"></i>Reddit
+                    </button>
+                    <button class="preset-btn" data-name="TikTok" data-url="tiktok.com" data-cat="video">
+                        <i class="bi bi-tiktok"></i>TikTok
+                    </button>
+                    <button class="preset-btn" data-name="Netflix" data-url="netflix.com" data-cat="entertainment">
+                        <i class="bi bi-film"></i>Netflix
+                    </button>
+                    <button class="preset-btn" data-name="WhatsApp" data-url="web.whatsapp.com" data-cat="messaging">
+                        <i class="bi bi-whatsapp"></i>WhatsApp
+                    </button>
+                    <button class="preset-btn" data-name="Discord" data-url="discord.com" data-cat="messaging">
+                        <i class="bi bi-discord"></i>Discord
+                    </button>
+                    <button class="preset-btn" data-name="Snapchat" data-url="snapchat.com" data-cat="social_media">
+                        <i class="bi bi-snapchat"></i>Snapchat
+                    </button>
+                    <button class="preset-btn" data-name="Pinterest" data-url="pinterest.com" data-cat="entertainment">
+                        <i class="bi bi-pinterest"></i>Pinterest
+                    </button>
+                    <button class="preset-btn" data-name="Twitch" data-url="twitch.tv" data-cat="gaming">
+                        <i class="bi bi-twitch"></i>Twitch
+                    </button>
+                </div>
             </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i class="bi bi-shield text-muted" style="font-size: 3rem;"></i>
-                <p class="text-muted mt-2">No blocked sites yet. Add sites to block during focus sessions.</p>
-            </div>
-            {% endif %}
         </div>
 
         <!-- How It Works -->
-        <div class="card p-4 mt-3">
-            <h5><i class="bi bi-info-circle text-info"></i> How Blocking Works</h5>
-            <ul class="text-muted mb-0">
-                <li>Sites in this list are flagged as blocked during focus sessions</li>
-                <li>In the web version, this is a simulation - you'll get warnings if you visit blocked sites</li>
-                <li>On the mobile/desktop app (Phase 3), actual system-level blocking will be active</li>
-                <li>You can toggle individual sites on/off without removing them</li>
-                <li>Visiting blocked sites during a focus session counts as a distraction</li>
+        <div class="how-it-works">
+            <h6 style="font-weight: 700; margin-bottom: 0.75rem;"><i class="bi bi-info-circle me-2"></i>How Blocking Works</h6>
+            <ul>
+                <li><i class="bi bi-check-circle-fill"></i>Sites are flagged during active focus sessions</li>
+                <li><i class="bi bi-check-circle-fill"></i>Opening blocked sites triggers distraction alerts</li>
+                <li><i class="bi bi-check-circle-fill"></i>Each visit counts as a distraction and reduces score</li>
+                <li><i class="bi bi-check-circle-fill"></i>Toggle sites on/off without removing them</li>
+                <li><i class="bi bi-check-circle-fill"></i>Desktop/mobile app (Phase 3) enables system-level blocking</li>
             </ul>
+        </div>
+    </div>
+
+    <!-- Block List -->
+    <div class="col-lg-7 animate-in">
+        <div class="fg-card">
+            <div class="card-body">
+                <h6 style="font-weight: 700; margin-bottom: 1.25rem;">
+                    <i class="bi bi-list-check me-2" style="color: var(--fg-primary);"></i>
+                    Blocked Sites ({{ blocked_sites.count }})
+                </h6>
+
+                {% if categories %}
+                {% for cat_name, sites in categories.items %}
+                <div class="category-section">
+                    <div class="category-header">{{ cat_name }}</div>
+                    {% for site in sites %}
+                    <div class="site-item" id="site-{{ site.id }}">
+                        <div class="site-icon" style="background: {{ site.category_color }}22; color: {{ site.category_color }};">
+                            <i class="bi bi-globe2"></i>
+                        </div>
+                        <div class="site-info">
+                            <div class="site-name">{{ site.name }}</div>
+                            <div class="site-url">{{ site.url }}{% if site.times_blocked > 0 %} &bull; blocked {{ site.times_blocked }}x{% endif %}</div>
+                        </div>
+                        <div class="site-actions">
+                            <button class="site-toggle {% if site.is_active %}on{% else %}off{% endif %}" data-id="{{ site.id }}" title="{% if site.is_active %}Active{% else %}Paused{% endif %}"></button>
+                            <button class="site-delete" data-id="{{ site.id }}" title="Remove">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-shield" style="font-size: 3rem; color: var(--fg-text-muted);"></i>
+                    <p style="font-size: 0.85rem; color: var(--fg-text-muted); margin-top: 0.75rem;">
+                        No blocked sites yet. Add sites using the form or quick presets.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -109,43 +355,52 @@
 
 {% block extra_js %}
 <script>
-    // Quick add presets
-    document.querySelectorAll('.quick-add').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelector('[name="name"]').value = btn.dataset.name;
-            document.querySelector('[name="url"]').value = btn.dataset.url;
-            document.querySelector('[name="category"]').value = btn.dataset.cat;
-        });
+// Quick preset buttons
+document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelector('[name="name"]').value = btn.dataset.name;
+        document.querySelector('[name="url"]').value = btn.dataset.url;
+        document.querySelector('[name="category"]').value = btn.dataset.cat;
+        // Scroll to form on mobile
+        document.querySelector('[name="name"]').focus();
+        showToast(`${btn.dataset.name} filled - click "Add to Block List"`, 'info', 2500);
     });
+});
 
-    // Toggle site
-    document.querySelectorAll('.toggle-site').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            const data = await apiCall(`/api/blocked-site/${id}/toggle/`, 'POST');
-            if (data) {
-                const statusBadge = document.getElementById(`status-${id}`);
-                if (data.is_active) {
-                    statusBadge.className = 'badge bg-danger';
-                    statusBadge.textContent = 'Blocked';
-                    btn.innerHTML = '<i class="bi bi-toggle-on"></i>';
-                } else {
-                    statusBadge.className = 'badge bg-secondary';
-                    statusBadge.textContent = 'Paused';
-                    btn.innerHTML = '<i class="bi bi-toggle-off"></i>';
-                }
+// Toggle site
+document.querySelectorAll('.site-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const data = await apiCall(`/api/blocked-site/${id}/toggle/`, 'POST');
+        if (data) {
+            if (data.is_active) {
+                btn.className = 'site-toggle on';
+                btn.title = 'Active';
+                showToast(`${data.name} blocking enabled`, 'success', 2000);
+            } else {
+                btn.className = 'site-toggle off';
+                btn.title = 'Paused';
+                showToast(`${data.name} blocking paused`, 'warning', 2000);
             }
-        });
+        }
     });
+});
 
-    // Delete site
-    document.querySelectorAll('.delete-site').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            if (!confirm('Remove this site from block list?')) return;
-            const id = btn.dataset.id;
-            await apiCall(`/api/blocked-site/${id}/delete/`, 'DELETE');
-            document.getElementById(`site-row-${id}`).remove();
-        });
+// Delete site
+document.querySelectorAll('.site-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        if (!confirm('Remove this site from block list?')) return;
+        const id = btn.dataset.id;
+        const data = await apiCall(`/api/blocked-site/${id}/delete/`, 'DELETE');
+        if (data !== null) {
+            const el = document.getElementById(`site-${id}`);
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(20px)';
+            el.style.transition = 'all 0.3s';
+            setTimeout(() => el.remove(), 300);
+            showToast('Site removed from block list', 'success', 2000);
+        }
     });
+});
 </script>
 {% endblock %}

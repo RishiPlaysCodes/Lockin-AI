@@ -4,158 +4,406 @@
 {% block title %}Reports - Focus Guardian AI{% endblock %}
 {% block nav_reports %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+.period-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--fg-card-border);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.period-tab {
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--fg-text-muted);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.period-tab:hover { color: var(--fg-text); background: rgba(108,99,255,0.05); }
+.period-tab.active {
+    background: rgba(108, 99, 255, 0.15);
+    color: var(--fg-primary-light);
+}
+
+.report-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.report-stat {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--fg-card-border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.report-stat .rs-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.report-stat .rs-label {
+    font-size: 0.7rem;
+    color: var(--fg-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.3rem;
+}
+
+.chart-card { min-height: 280px; }
+
+.log-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.log-table thead th {
+    background: rgba(108,99,255,0.04);
+    padding: 0.6rem 0.8rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--fg-text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--fg-card-border);
+    white-space: nowrap;
+}
+
+.log-table tbody td {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.82rem;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    vertical-align: middle;
+}
+
+.log-table tbody tr:hover { background: rgba(108,99,255,0.02); }
+
+.insight-card {
+    background: linear-gradient(135deg, rgba(108,99,255,0.06), rgba(78,205,196,0.04));
+    border: 1px solid rgba(108,99,255,0.15);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.insight-card .insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-        <h1><i class="bi bi-bar-chart-fill text-success"></i> Study Reports</h1>
-        <p class="text-muted mb-0">Track your progress and analyze study patterns</p>
+<div class="topbar">
+    <div class="topbar-left">
+        <h1><i class="bi bi-bar-chart-fill me-2" style="color: var(--fg-success);"></i>Study Reports</h1>
+        <p>Analyze your study patterns and track progress</p>
     </div>
-    <div class="btn-group">
-        <a href="?days=7" class="btn btn-outline-primary {% if days == 7 %}active{% endif %}">7 Days</a>
-        <a href="?days=14" class="btn btn-outline-primary {% if days == 14 %}active{% endif %}">14 Days</a>
-        <a href="?days=30" class="btn btn-outline-primary {% if days == 30 %}active{% endif %}">30 Days</a>
+    <div class="period-tabs">
+        <a href="?days=7" class="period-tab {% if days == 7 %}active{% endif %}">7 Days</a>
+        <a href="?days=14" class="period-tab {% if days == 14 %}active{% endif %}">14 Days</a>
+        <a href="?days=30" class="period-tab {% if days == 30 %}active{% endif %}">30 Days</a>
+        <a href="?days=90" class="period-tab {% if days == 90 %}active{% endif %}">90 Days</a>
     </div>
 </div>
 
 <!-- Summary Stats -->
+<div class="report-stat-grid mb-4 animate-in">
+    <div class="report-stat">
+        <div class="rs-value text-gradient">{{ total_hours }}h</div>
+        <div class="rs-label">Total Study</div>
+    </div>
+    <div class="report-stat">
+        <div class="rs-value" style="color: var(--fg-secondary);">{{ total_sessions }}</div>
+        <div class="rs-label">Sessions</div>
+    </div>
+    <div class="report-stat">
+        <div class="rs-value" style="color: var(--fg-warning);">{{ avg_score }}</div>
+        <div class="rs-label">Avg Score</div>
+    </div>
+    <div class="report-stat">
+        <div class="rs-value" style="color: var(--fg-accent);">{{ total_distractions }}</div>
+        <div class="rs-label">Distractions</div>
+    </div>
+    <div class="report-stat">
+        <div class="rs-value" style="color: var(--fg-success);">{{ completion_rate }}%</div>
+        <div class="rs-label">Completion</div>
+    </div>
+    <div class="report-stat">
+        <div class="rs-value" style="color: var(--fg-primary-light);">{{ avg_daily }}m</div>
+        <div class="rs-label">Daily Avg</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card stat-card">
-            <div class="stat-value">{{ total_hours }}h</div>
-            <div class="stat-label">Total Study Time</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card">
-            <div class="stat-value">{{ total_sessions }}</div>
-            <div class="stat-label">Sessions Completed</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card">
-            <div class="stat-value">{{ total_distractions }}</div>
-            <div class="stat-label">Distractions</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card stat-card">
-            <div class="stat-value">{{ avg_score }}</div>
-            <div class="stat-label">Avg Focus Score</div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <!-- Daily Breakdown -->
-    <div class="col-md-8">
-        <div class="card p-4">
-            <h5 class="mb-3"><i class="bi bi-calendar3 text-info"></i> Daily Breakdown</h5>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Study Time</th>
-                            <th>Sessions</th>
-                            <th>Progress</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for day in daily_data %}
-                        <tr>
-                            <td>{{ day.date|date:"M d, D" }}</td>
-                            <td>{{ day.minutes }}m</td>
-                            <td>{{ day.sessions }}</td>
-                            <td>
-                                <div class="progress" style="height: 8px; background: rgba(255,255,255,0.1);">
-                                    <div class="progress-bar bg-success" style="width: {% widthratio day.minutes 120 100 %}%"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Daily Study Chart -->
+    <div class="col-lg-8 animate-in">
+        <div class="fg-card chart-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 style="font-weight: 700; margin: 0;"><i class="bi bi-graph-up-arrow me-2" style="color: var(--fg-primary);"></i>Daily Study Time</h6>
+                    {% if best_day %}
+                    <span class="fg-badge fg-badge-success">Best: {{ best_day.date }} ({{ best_day.minutes }}m)</span>
+                    {% endif %}
+                </div>
+                <canvas id="dailyChart" height="220"></canvas>
             </div>
         </div>
     </div>
 
+    <!-- Distractions Chart -->
+    <div class="col-lg-4 animate-in">
+        <div class="fg-card chart-card">
+            <div class="card-body">
+                <h6 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-exclamation-triangle me-2" style="color: var(--fg-accent);"></i>Distractions</h6>
+                <canvas id="distractionsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject & Insights Row -->
+<div class="row g-3 mb-4">
     <!-- Subject Breakdown -->
-    <div class="col-md-4">
-        <div class="card p-4">
-            <h5 class="mb-3"><i class="bi bi-book text-warning"></i> By Subject</h5>
-            {% if subjects %}
-            {% for subject in subjects %}
-            <div class="mb-3">
-                <div class="d-flex justify-content-between">
-                    <span>{{ subject.subject }}</span>
-                    <span class="text-muted">{{ subject.total_min }}m</span>
+    <div class="col-lg-5 animate-in">
+        <div class="fg-card">
+            <div class="card-body">
+                <h6 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-book me-2" style="color: var(--fg-secondary);"></i>Subject Breakdown</h6>
+                {% if subjects %}
+                {% for s in subjects %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size: 0.85rem; font-weight: 600;">{{ s.subject }}</span>
+                        <span style="font-size: 0.75rem; color: var(--fg-text-muted);">{{ s.total_min }}m &bull; {{ s.count }} sessions &bull; Avg {{ s.avg_score|floatformat:0 }}</span>
+                    </div>
+                    <div class="progress" style="height: 5px;">
+                        <div class="progress-bar" style="width: {% widthratio s.total_min total_minutes 100 %}%;"></div>
+                    </div>
                 </div>
-                <div class="progress mt-1" style="height: 6px; background: rgba(255,255,255,0.1);">
-                    <div class="progress-bar" style="width: {% widthratio subject.total_min total_minutes 100 %}%; background: linear-gradient(90deg, #6c63ff, #4ecdc4);"></div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-journal" style="font-size: 2rem; color: var(--fg-text-muted);"></i>
+                    <p style="font-size: 0.82rem; color: var(--fg-text-muted); margin-top: 0.5rem;">No data yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="col-lg-7 animate-in">
+        <div class="row g-3">
+            <div class="col-sm-6">
+                <div class="insight-card">
+                    <div class="insight-icon" style="background: rgba(108,99,255,0.12); color: var(--fg-primary);">
+                        <i class="bi bi-clock-fill"></i>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--fg-text-muted); margin-bottom: 0.25rem;">Best Time to Study</div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">
+                        {% if total_sessions > 0 %}Morning sessions tend to be best{% else %}Start studying to see insights{% endif %}
+                    </div>
                 </div>
             </div>
-            {% endfor %}
-            {% else %}
-            <p class="text-muted text-center">No data yet. Complete some sessions!</p>
-            {% endif %}
-        </div>
-
-        <!-- Study Tips -->
-        <div class="card p-4 mt-3">
-            <h5 class="mb-3"><i class="bi bi-lightbulb text-warning"></i> Tips</h5>
-            {% if avg_score < 60 %}
-            <p class="text-muted mb-0">Your focus score is low. Try shorter sessions and remove distractions from your environment.</p>
-            {% elif total_sessions == 0 %}
-            <p class="text-muted mb-0">Start your first focus session to see analytics here!</p>
-            {% elif total_distractions > total_sessions %}
-            <p class="text-muted mb-0">You're getting more distractions than sessions. Consider using the blocking feature.</p>
-            {% else %}
-            <p class="text-muted mb-0">Great job! Keep maintaining your focus streak and try increasing session duration.</p>
-            {% endif %}
+            <div class="col-sm-6">
+                <div class="insight-card">
+                    <div class="insight-icon" style="background: rgba(78,205,196,0.12); color: var(--fg-secondary);">
+                        <i class="bi bi-lightning-fill"></i>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--fg-text-muted); margin-bottom: 0.25rem;">Focus Trend</div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">
+                        {% if avg_score >= 80 %}Excellent focus! Keep it up{% elif avg_score >= 60 %}Good, room for improvement{% elif total_sessions > 0 %}Try shorter sessions{% else %}No data yet{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="insight-card">
+                    <div class="insight-icon" style="background: rgba(255,107,107,0.12); color: var(--fg-accent);">
+                        <i class="bi bi-shield-fill"></i>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--fg-text-muted); margin-bottom: 0.25rem;">Distraction Rate</div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">
+                        {% if total_sessions > 0 %}{{ total_distractions|divide:total_sessions }} per session avg{% else %}No data{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="insight-card">
+                    <div class="insight-icon" style="background: rgba(254,202,87,0.12); color: var(--fg-warning);">
+                        <i class="bi bi-trophy-fill"></i>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--fg-text-muted); margin-bottom: 0.25rem;">Completion Rate</div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">
+                        {% if completion_rate >= 80 %}Outstanding discipline!{% elif completion_rate >= 50 %}Building consistency{% elif total_sessions > 0 %}Try finishing sessions{% else %}Start a session{% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Study Logs -->
+<!-- Session Logs -->
 {% if study_logs %}
-<div class="card p-4 mt-4">
-    <h5 class="mb-3"><i class="bi bi-journal-text text-primary"></i> Study Log Entries</h5>
-    <div class="table-responsive">
-        <table class="table table-dark table-hover">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Subject</th>
-                    <th>Duration</th>
-                    <th>Sessions</th>
-                    <th>Distractions</th>
-                    <th>Score</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in study_logs %}
-                <tr>
-                    <td>{{ log.date|date:"M d" }}</td>
-                    <td>{{ log.subject }}</td>
-                    <td>{{ log.duration_minutes }}m</td>
-                    <td>{{ log.sessions_count }}</td>
-                    <td>
-                        {% if log.distractions_count > 0 %}
-                        <span class="text-danger">{{ log.distractions_count }}</span>
-                        {% else %}
-                        <span class="text-success">0</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span class="{% if log.focus_score >= 80 %}text-success{% elif log.focus_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
-                            {{ log.focus_score }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="fg-card animate-in">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 style="font-weight: 700; margin: 0;"><i class="bi bi-journal-text me-2" style="color: var(--fg-primary);"></i>Study Log</h6>
+            <form method="get" action="{% url 'settings' %}" style="display:inline;">
+                <button type="submit" name="action" value="export_data" class="btn-fg-outline" style="font-size: 0.72rem; padding: 4px 10px;">
+                    <i class="bi bi-download me-1"></i>Export
+                </button>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        <th>Duration</th>
+                        <th>Sessions</th>
+                        <th>Distractions</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in study_logs %}
+                    <tr>
+                        <td>{{ log.date|date:"M d" }}</td>
+                        <td style="font-weight: 600;">{{ log.subject }}</td>
+                        <td>{{ log.duration_minutes }}m</td>
+                        <td>{{ log.sessions_count }}</td>
+                        <td>
+                            {% if log.distractions_count > 0 %}
+                            <span style="color: var(--fg-accent);">{{ log.distractions_count }}</span>
+                            {% else %}
+                            <span style="color: var(--fg-success);">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="fg-badge {% if log.focus_score >= 80 %}fg-badge-success{% elif log.focus_score >= 60 %}fg-badge-warning{% else %}fg-badge-danger{% endif %}">
+                                {{ log.focus_score }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const dailyData = {{ daily_data_json|safe }};
+
+// Daily Study Time Line/Bar Chart
+const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+        labels: dailyData.map(d => d.date),
+        datasets: [{
+            label: 'Study (min)',
+            data: dailyData.map(d => d.minutes),
+            borderColor: '#6c63ff',
+            backgroundColor: 'rgba(108, 99, 255, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#6c63ff',
+            pointBorderColor: '#6c63ff',
+            pointRadius: 3,
+            pointHoverRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(10,14,30,0.95)',
+                borderColor: 'rgba(108,99,255,0.3)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                callbacks: {
+                    label: (ctx) => ` ${ctx.raw} minutes studied`
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.03)' },
+                ticks: { color: '#94a3b8', font: { size: 10 } }
+            }
+        },
+        interaction: { intersect: false, mode: 'index' }
+    }
+});
+
+// Distractions Chart
+const distCtx = document.getElementById('distractionsChart').getContext('2d');
+new Chart(distCtx, {
+    type: 'bar',
+    data: {
+        labels: dailyData.map(d => d.date),
+        datasets: [{
+            label: 'Distractions',
+            data: dailyData.map(d => d.distractions),
+            backgroundColor: 'rgba(255, 107, 107, 0.4)',
+            borderColor: 'rgba(255, 107, 107, 0.7)',
+            borderWidth: 1,
+            borderRadius: 4,
+            barThickness: 12,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(10,14,30,0.95)',
+                borderColor: 'rgba(255,107,107,0.3)',
+                borderWidth: 1,
+                cornerRadius: 8,
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45 }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.03)' },
+                ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 1 }
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

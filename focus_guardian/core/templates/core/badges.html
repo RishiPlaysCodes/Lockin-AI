@@ -6,164 +6,354 @@
 
 {% block extra_css %}
 <style>
-    .badge-card {
-        background: rgba(15, 52, 96, 0.5);
-        border: 1px solid rgba(108, 99, 255, 0.15);
-        border-radius: 16px;
-        padding: 1.5rem;
-        text-align: center;
-        transition: all 0.3s;
-        height: 100%;
-    }
+.badges-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
 
-    .badge-card.earned {
-        border-color: rgba(78, 205, 196, 0.4);
-        background: rgba(78, 205, 196, 0.05);
-    }
+.progress-ring-container {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 1rem;
+    position: relative;
+}
 
-    .badge-card.locked {
-        opacity: 0.4;
-        filter: grayscale(1);
-    }
+.progress-ring-container svg { transform: rotate(-90deg); }
 
-    .badge-card:hover {
-        transform: translateY(-3px);
-    }
+.progress-ring-bg {
+    fill: none;
+    stroke: rgba(108,99,255,0.08);
+    stroke-width: 8;
+}
 
-    .badge-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1rem;
-        font-size: 1.5rem;
-    }
+.progress-ring-fill {
+    fill: none;
+    stroke: url(#badgeGradient);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s ease;
+}
 
-    .badge-card.earned .badge-icon {
-        background: linear-gradient(135deg, #4ecdc4, #6c63ff);
-        color: white;
-    }
+.progress-ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
 
-    .badge-card.locked .badge-icon {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.3);
-    }
+.progress-ring-text .ring-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
 
-    .progress-header {
-        background: rgba(15, 52, 96, 0.6);
-        border: 1px solid rgba(108, 99, 255, 0.15);
-        border-radius: 16px;
-        padding: 2rem;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
+.progress-ring-text .ring-label {
+    font-size: 0.7rem;
+    color: var(--fg-text-muted);
+    text-transform: uppercase;
+}
 
-    .progress-ring {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 6px solid rgba(108, 99, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1rem;
-        position: relative;
-    }
+/* Badge Grid */
+.badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
 
-    .progress-ring::after {
-        content: '';
-        position: absolute;
-        top: -6px;
-        left: -6px;
-        right: -6px;
-        bottom: -6px;
-        border-radius: 50%;
-        border: 6px solid transparent;
-        border-top-color: #4ecdc4;
-        border-right-color: #6c63ff;
-        transform: rotate({{ earned_count|floatformat:0 }}deg);
-    }
+.badge-card {
+    background: var(--fg-card);
+    border: 1px solid var(--fg-card-border);
+    border-radius: 14px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.badge-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+}
+
+.badge-card.earned {
+    border-color: rgba(78, 205, 196, 0.3);
+}
+
+.badge-card.earned::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--fg-primary), var(--fg-secondary));
+}
+
+.badge-card.locked {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+}
+
+.badge-card.locked:hover {
+    opacity: 0.7;
+    filter: grayscale(0.2);
+}
+
+.badge-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    font-size: 1.4rem;
+    position: relative;
+}
+
+.badge-card.earned .badge-icon-wrap {
+    animation: badgePulse 3s ease infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(78,205,196,0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(78,205,196,0); }
+}
+
+.badge-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--fg-text);
+}
+
+.badge-desc {
+    font-size: 0.72rem;
+    color: var(--fg-text-muted);
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.badge-rarity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rarity-common { background: rgba(78,205,196,0.12); color: var(--fg-secondary); }
+.rarity-epic { background: rgba(168,85,247,0.12); color: #a855f7; }
+.rarity-rare { background: rgba(255,215,0,0.12); color: #ffd700; }
+.rarity-legendary { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+.badge-earned-date {
+    font-size: 0.68rem;
+    color: var(--fg-text-muted);
+    margin-top: 0.4rem;
+}
+
+.badge-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--fg-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: white;
+}
+
+/* Filter tabs */
+.badge-filters {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.badge-filter {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--fg-card-border);
+    background: transparent;
+    color: var(--fg-text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.badge-filter:hover { border-color: var(--fg-primary); color: var(--fg-primary-light); }
+.badge-filter.active {
+    background: rgba(108,99,255,0.12);
+    border-color: var(--fg-primary);
+    color: var(--fg-primary-light);
+}
+
+/* Stats row */
+.badge-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.badge-stat-item {
+    text-align: center;
+}
+
+.badge-stat-item .bsi-val {
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+.badge-stat-item .bsi-lbl {
+    font-size: 0.7rem;
+    color: var(--fg-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-trophy-fill text-warning"></i> Badges & Achievements</h1>
-    <p class="text-muted mb-0">Complete challenges to earn badges and show your dedication</p>
+<div class="topbar">
+    <div class="topbar-left">
+        <h1><i class="bi bi-trophy-fill me-2" style="color: var(--fg-warning);"></i>Badges & Achievements</h1>
+        <p>Complete challenges to unlock badges and show your dedication</p>
+    </div>
 </div>
 
-<!-- Progress Overview -->
-<div class="progress-header">
-    <div class="progress-ring">
-        <div>
-            <h2 class="mb-0" style="background: linear-gradient(135deg, #6c63ff, #4ecdc4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                {{ earned_count }}/{{ total_count }}
-            </h2>
+<!-- Progress Ring Header -->
+<div class="badges-header animate-in">
+    <div class="progress-ring-container">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+            <defs>
+                <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#6c63ff"/>
+                    <stop offset="100%" style="stop-color:#4ecdc4"/>
+                </linearGradient>
+            </defs>
+            <circle class="progress-ring-bg" cx="70" cy="70" r="58"/>
+            <circle class="progress-ring-fill" cx="70" cy="70" r="58"
+                stroke-dasharray="364.4"
+                stroke-dashoffset="{{ total_count|subtract:earned_count|multiply:364.4|divide:total_count }}"/>
+        </svg>
+        <div class="progress-ring-text">
+            <div class="ring-value text-gradient">{{ earned_count }}</div>
+            <div class="ring-label">of {{ total_count }}</div>
         </div>
     </div>
-    <h4>Badges Earned</h4>
-    <p class="text-muted mb-2">Level: <span class="text-warning fw-bold">{{ profile.level }}</span></p>
-    <div class="progress mx-auto" style="max-width: 300px; height: 10px; background: rgba(255,255,255,0.1);">
-        <div class="progress-bar" role="progressbar" style="width: {% widthratio earned_count total_count 100 %}%; background: linear-gradient(90deg, #6c63ff, #4ecdc4);"></div>
+
+    <div class="badge-stats">
+        <div class="badge-stat-item">
+            <div class="bsi-val" style="color: var(--fg-secondary);">{{ profile.level }}</div>
+            <div class="bsi-lbl">Level</div>
+        </div>
+        <div class="badge-stat-item">
+            <div class="bsi-val text-gradient">{{ profile.xp_points }}</div>
+            <div class="bsi-lbl">XP Points</div>
+        </div>
+        <div class="badge-stat-item">
+            <div class="bsi-val" style="color: var(--fg-warning);">{{ profile.longest_streak }}</div>
+            <div class="bsi-lbl">Best Streak</div>
+        </div>
+        <div class="badge-stat-item">
+            <div class="bsi-val" style="color: var(--fg-success);">{{ profile.total_study_hours }}h</div>
+            <div class="bsi-lbl">Study Hours</div>
+        </div>
     </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="badge-filters animate-in">
+    <button class="badge-filter active" data-filter="all">All</button>
+    <button class="badge-filter" data-filter="earned">Earned</button>
+    <button class="badge-filter" data-filter="locked">Locked</button>
+    <button class="badge-filter" data-filter="Common">Common</button>
+    <button class="badge-filter" data-filter="Epic">Epic</button>
+    <button class="badge-filter" data-filter="Rare">Rare</button>
+    <button class="badge-filter" data-filter="Legendary">Legendary</button>
 </div>
 
 <!-- Badge Grid -->
-<div class="row g-3">
+<div class="badge-grid" id="badge-grid">
     {% for badge in all_badges %}
-    <div class="col-6 col-md-4 col-lg-3">
-        <div class="badge-card {% if badge.earned %}earned{% else %}locked{% endif %}">
-            <div class="badge-icon">
-                {% if badge.earned %}
-                <i class="bi bi-check-circle-fill"></i>
-                {% else %}
-                <i class="bi bi-lock-fill"></i>
-                {% endif %}
-            </div>
-            <h6>{{ badge.name }}</h6>
-            <small class="text-muted">
-                {% if badge.earned %}
-                <span class="text-success">Earned!</span>
-                {% else %}
-                Keep going!
-                {% endif %}
-            </small>
+    <div class="badge-card {% if badge.earned %}earned{% else %}locked{% endif %}" 
+         data-status="{% if badge.earned %}earned{% else %}locked{% endif %}"
+         data-rarity="{{ badge.rarity }}">
+        
+        {% if badge.earned %}
+        <div class="badge-check"><i class="bi bi-check"></i></div>
+        {% endif %}
+
+        <div class="badge-icon-wrap" style="background: {{ badge.color }}18; color: {{ badge.color }};">
+            <i class="bi bi-{{ badge.icon }}"></i>
         </div>
+
+        <div class="badge-name">{{ badge.name }}</div>
+        <div class="badge-desc">{{ badge.description }}</div>
+
+        <span class="badge-rarity rarity-{{ badge.rarity|lower }}">{{ badge.rarity }}</span>
+
+        {% if badge.earned and badge.earned_at %}
+        <div class="badge-earned-date">
+            <i class="bi bi-calendar-check"></i> {{ badge.earned_at|date:"M d, Y" }}
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
+{% endblock %}
 
-<!-- How to Earn -->
-<div class="card p-4 mt-4">
-    <h5><i class="bi bi-lightbulb text-warning"></i> How to Earn Badges</h5>
-    <div class="row g-3 mt-1">
-        <div class="col-md-4">
-            <h6 class="text-primary">Streak Badges</h6>
-            <ul class="text-muted small">
-                <li>3 Day Streak - Study 3 days in a row</li>
-                <li>Week Warrior - 7 day streak</li>
-                <li>Monthly Champion - 30 day streak</li>
-            </ul>
-        </div>
-        <div class="col-md-4">
-            <h6 class="text-primary">Hours Badges</h6>
-            <ul class="text-muted small">
-                <li>5 Hours Club - Total 5h study time</li>
-                <li>20 Hours Club - Total 20h study time</li>
-                <li>50 Hours Club - Total 50h study time</li>
-                <li>Century Scholar - Total 100h study time</li>
-            </ul>
-        </div>
-        <div class="col-md-4">
-            <h6 class="text-primary">Special Badges</h6>
-            <ul class="text-muted small">
-                <li>First Session - Complete your first session</li>
-                <li>Zero Distraction - 15+ min with no distractions</li>
-                <li>Focus Master - Achieve 100 focus score</li>
-            </ul>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+// Badge filter
+document.querySelectorAll('.badge-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.badge-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.badge-card').forEach(card => {
+            const status = card.dataset.status;
+            const rarity = card.dataset.rarity;
+            
+            let show = false;
+            if (filter === 'all') show = true;
+            else if (filter === 'earned') show = status === 'earned';
+            else if (filter === 'locked') show = status === 'locked';
+            else show = rarity === filter;
+
+            card.style.display = show ? '' : 'none';
+        });
+    });
+});
+
+// Animate earned badges on scroll
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.animation = 'fadeInUp 0.5s ease forwards';
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.badge-card').forEach(card => {
+    card.style.opacity = '0';
+    observer.observe(card);
+});
+</script>
 {% endblock %}

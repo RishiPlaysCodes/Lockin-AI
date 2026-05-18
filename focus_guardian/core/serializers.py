@@ -29,81 +29,90 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
     level = serializers.CharField(read_only=True)
+    level_progress = serializers.FloatField(read_only=True)
     total_study_hours = serializers.FloatField(read_only=True)
+    xp_points = serializers.IntegerField(read_only=True)
+    daily_goal_progress = serializers.FloatField(read_only=True)
+    focus_grade = serializers.CharField(read_only=True)
+    average_session_length = serializers.FloatField(read_only=True)
 
     class Meta:
         model = UserProfile
         fields = [
-            "username",
-            "focus_score",
-            "total_study_time",
-            "total_study_hours",
-            "streak_days",
-            "level",
+            "username", "email", "focus_score", "total_study_time",
+            "total_study_hours", "streak_days", "longest_streak",
+            "total_sessions_completed", "total_distractions",
+            "level", "level_progress", "xp_points",
+            "daily_goal_minutes", "daily_goal_progress",
+            "focus_grade", "average_session_length",
+            "bio", "avatar_color", "theme",
         ]
 
 
 class DistractionSerializer(serializers.ModelSerializer):
+    score_penalty = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Distraction
-        fields = ["id", "session", "app_name", "distraction_type", "timestamp"]
+        fields = ["id", "session", "app_name", "distraction_type", "severity", "score_penalty", "timestamp"]
 
 
 class FocusSessionSerializer(serializers.ModelSerializer):
     distractions = DistractionSerializer(many=True, read_only=True)
     duration_minutes = serializers.FloatField(read_only=True)
+    duration_formatted = serializers.CharField(read_only=True)
     distraction_count = serializers.IntegerField(read_only=True)
+    completion_percentage = serializers.FloatField(read_only=True)
 
     class Meta:
         model = FocusSession
         fields = [
-            "id",
-            "user",
-            "subject",
-            "start_time",
-            "end_time",
-            "planned_duration",
-            "is_active",
-            "notes",
-            "duration_minutes",
-            "distraction_count",
+            "id", "user", "subject", "session_type",
+            "start_time", "end_time", "planned_duration",
+            "is_active", "is_completed", "notes",
+            "mood_before", "mood_after", "focus_score",
+            "duration_minutes", "duration_formatted",
+            "distraction_count", "completion_percentage",
             "distractions",
         ]
         read_only_fields = ["user", "start_time"]
 
 
 class BlockedSiteSerializer(serializers.ModelSerializer):
+    category_color = serializers.CharField(read_only=True)
+
     class Meta:
         model = BlockedSite
-        fields = ["id", "name", "url", "category", "is_active", "created_at"]
+        fields = ["id", "name", "url", "category", "category_color", "is_active", "times_blocked", "created_at"]
 
 
 class StudyLogSerializer(serializers.ModelSerializer):
+    hours_studied = serializers.FloatField(read_only=True)
+
     class Meta:
         model = StudyLog
         fields = [
-            "id",
-            "date",
-            "subject",
-            "duration_minutes",
-            "sessions_count",
-            "distractions_count",
-            "focus_score",
-            "notes",
+            "id", "date", "subject", "duration_minutes",
+            "hours_studied", "sessions_count", "distractions_count",
+            "focus_score", "notes", "mood",
         ]
 
 
 class BadgeSerializer(serializers.ModelSerializer):
     display_name = serializers.CharField(source="get_badge_type_display", read_only=True)
     icon = serializers.CharField(read_only=True)
+    color = serializers.CharField(read_only=True)
+    rarity = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
 
     class Meta:
         model = Badge
-        fields = ["id", "badge_type", "display_name", "icon", "earned_at"]
+        fields = ["id", "badge_type", "display_name", "icon", "color", "rarity", "description", "earned_at", "is_new"]
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
-        fields = ["id", "role", "content", "timestamp"]
+        fields = ["id", "role", "content", "mode", "timestamp", "is_pinned"]
