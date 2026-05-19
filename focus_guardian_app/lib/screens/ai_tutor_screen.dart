@@ -621,7 +621,7 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
                     _providerChip('gemini', 'Gemini', selectedProvider, (val) {
                       setDialogState(() {
                         selectedProvider = val;
-                        selectedModel = 'gemini-pro';
+                        selectedModel = 'gemini-2.0-flash';
                       });
                     }),
                   ],
@@ -662,7 +662,34 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
                     }).toList(),
                   )
                 else
-                  const Text('gemini-pro', style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((model) {
+                      final isSelected = model == selectedModel;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() => selectedModel = model),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary.withOpacity(0.15) : AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                            ),
+                          ),
+                          child: Text(
+                            model,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected ? AppColors.primary : AppColors.textMuted,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 const SizedBox(height: 16),
                 const Text(
                   'API Key',

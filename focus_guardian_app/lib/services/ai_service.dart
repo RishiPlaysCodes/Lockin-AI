@@ -217,26 +217,40 @@ PERSONALITY: Organized, practical, encouraging. Like a senior who already cracke
     }
   }
 
-  /// Call Google Gemini API
+  /// Call Google Gemini API (updated URL for 2025+ models)
   Future<String> _callGemini(String systemPrompt, List<Map<String, String>> history) async {
+    // Use gemini-2.0-flash (latest free model, replaces deprecated gemini-pro)
+    final model = _model == 'gemini-pro' ? 'gemini-2.0-flash' : _model;
     final url = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=$_apiKey',
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$_apiKey',
     );
 
-    // Convert history to Gemini format
-    final parts = <Map<String, dynamic>>[];
-    parts.add({'text': 'System instruction: $systemPrompt'});
+    // Build contents in proper Gemini format
+    final contents = <Map<String, dynamic>>[];
+
+    // System instruction as first user message
+    contents.add({
+      'role': 'user',
+      'parts': [{'text': 'System: $systemPrompt\n\nNow respond to the following conversation:'}]
+    });
+    contents.add({
+      'role': 'model',
+      'parts': [{'text': 'Understood. I will follow these instructions.'}]
+    });
+
+    // Add conversation history
     for (final msg in history) {
-      parts.add({'text': '${msg['role'] == 'user' ? 'User' : 'Assistant'}: ${msg['content']}'});
+      contents.add({
+        'role': msg['role'] == 'user' ? 'user' : 'model',
+        'parts': [{'text': msg['content'] ?? ''}]
+      });
     }
 
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
-        'contents': [
-          {'parts': parts}
-        ],
+        'contents': contents,
         'generationConfig': {
           'temperature': 0.7,
           'maxOutputTokens': 1000,
@@ -253,8 +267,15 @@ PERSONALITY: Organized, practical, encouraging. Like a senior who already cracke
         return parts.map((p) => p['text']).join('');
       }
       return 'No response generated.';
+    } else if (response.statusCode == 404) {
+      throw AIServiceException(
+        'Model not found. Try changing model in settings. Available: gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro'
+      );
     } else if (response.statusCode == 400) {
-      throw AIServiceException('Invalid request to Gemini API. Check your API key.');
+      final error = json.decode(response.body);
+      throw AIServiceException('Gemini Error: ${error['error']?['message'] ?? 'Invalid request'}');
+    } else if (response.statusCode == 403) {
+      throw AIServiceException('API key invalid or region restricted. Check your key.');
     } else {
       throw AIServiceException('Gemini API Error (${response.statusCode})');
     }
