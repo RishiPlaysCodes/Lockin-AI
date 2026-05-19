@@ -4,7 +4,12 @@ import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/timer_provider.dart';
+import 'providers/teacher_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/teacher_select_screen.dart';
+import 'screens/friends_screen.dart';
+import 'screens/group_session_screen.dart';
+import 'screens/account_blocking_screen.dart';
 import 'utils/theme.dart';
 
 void main() {
@@ -29,12 +34,19 @@ class FocusGuardianApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => TimerProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherProvider()),
       ],
       child: MaterialApp(
         title: 'Focus Guardian AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const SplashScreen(),
+        routes: {
+          '/teacher-select': (context) => const TeacherSelectScreen(),
+          '/friends': (context) => const FriendsScreen(),
+          '/group-session': (context) => const GroupSessionScreen(),
+          '/account-blocking': (context) => const AccountBlockingScreen(),
+        },
       ),
     );
   }
