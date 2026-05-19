@@ -12,6 +12,7 @@ import 'screens/friends_screen.dart';
 import 'screens/group_session_screen.dart';
 import 'screens/account_blocking_screen.dart';
 import 'screens/focus_monitor_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'utils/theme.dart';
 
 void main() {
@@ -50,6 +51,7 @@ class FocusGuardianApp extends StatelessWidget {
           '/group-session': (context) => const GroupSessionScreen(),
           '/account-blocking': (context) => const AccountBlockingScreen(),
           '/focus-monitor': (context) => const FocusMonitorScreen(),
+          '/analytics': (context) => const AnalyticsScreen(),
         },
       ),
     );
