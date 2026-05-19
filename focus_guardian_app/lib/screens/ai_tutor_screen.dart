@@ -37,7 +37,7 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
     _ModeConfig(
       key: 'student',
       label: 'Student',
-      icon: Icons.person_raised_hand,
+      icon: Icons.back_hand_rounded,
       color: Color(0xFF4ECDC4),
       description: 'AI pretends to be a student. YOU teach and correct it.',
     ),

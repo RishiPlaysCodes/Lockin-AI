@@ -355,7 +355,7 @@ class TeacherProvider extends ChangeNotifier {
     );
     _groupSessions.insert(0, session);
     _activeGroupSession = session;
-    _activateTeacher(); // AI teacher monitors group session
+    activateTeacher(); // AI teacher monitors group session
     _saveData();
     notifyListeners();
     return session;
@@ -389,7 +389,7 @@ class TeacherProvider extends ChangeNotifier {
     final idx = _groupSessions.indexWhere((s) => s.id == sessionId);
     if (idx != -1) {
       _activeGroupSession = _groupSessions[idx];
-      _activateTeacher();
+      activateTeacher();
       notifyListeners();
     }
   }
