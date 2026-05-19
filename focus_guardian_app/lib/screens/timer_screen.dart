@@ -56,15 +56,6 @@ class _TimerScreenState extends State<TimerScreen> {
     }
   }
 
-  void _simulateDistraction(String appName) {
-    final timerProvider = Provider.of<TimerProvider>(context, listen: false);
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
-    final sessionId = timerProvider.activeSessionId;
-    if (sessionId != null) {
-      appProvider.logDistraction(sessionId, appName, 'app_switch');
-    }
-  }
-
   void _showSummaryDialog(Map<String, dynamic> result) {
     if (result.isEmpty) return;
     showDialog(
@@ -417,29 +408,41 @@ class _TimerScreenState extends State<TimerScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Distraction simulation
+            // Real focus monitoring integration
+            // (No fake simulation buttons - monitoring handled by FocusMonitorService)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  const Text(
-                    'Simulate Distraction (for testing)',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.shield, color: AppColors.secondary, size: 18),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _distractionBtn('Instagram', Icons.camera_alt),
-                      _distractionBtn('YouTube', Icons.play_circle),
-                      _distractionBtn('Twitter', Icons.alternate_email),
-                      _distractionBtn('TikTok', Icons.music_note),
-                    ],
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Guardian Active',
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'AI is monitoring your focus. Stay on track!',
+                          style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -459,27 +462,6 @@ class _TimerScreenState extends State<TimerScreen> {
         Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
       ],
-    );
-  }
-
-  Widget _distractionBtn(String name, IconData icon) {
-    return GestureDetector(
-      onTap: () => _simulateDistraction(name),
-      child: Column(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppColors.accent, size: 18),
-          ),
-          const SizedBox(height: 2),
-          Text(name, style: const TextStyle(color: AppColors.textMuted, fontSize: 9)),
-        ],
-      ),
     );
   }
 }

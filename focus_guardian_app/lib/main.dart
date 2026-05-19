@@ -5,11 +5,13 @@ import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/timer_provider.dart';
 import 'providers/teacher_provider.dart';
+import 'services/focus_monitor_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/teacher_select_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/group_session_screen.dart';
 import 'screens/account_blocking_screen.dart';
+import 'screens/focus_monitor_screen.dart';
 import 'utils/theme.dart';
 
 void main() {
@@ -35,6 +37,7 @@ class FocusGuardianApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => TimerProvider()),
         ChangeNotifierProvider(create: (_) => TeacherProvider()),
+        ChangeNotifierProvider(create: (_) => FocusMonitorService()),
       ],
       child: MaterialApp(
         title: 'Focus Guardian AI',
@@ -46,6 +49,7 @@ class FocusGuardianApp extends StatelessWidget {
           '/friends': (context) => const FriendsScreen(),
           '/group-session': (context) => const GroupSessionScreen(),
           '/account-blocking': (context) => const AccountBlockingScreen(),
+          '/focus-monitor': (context) => const FocusMonitorScreen(),
         },
       ),
     );

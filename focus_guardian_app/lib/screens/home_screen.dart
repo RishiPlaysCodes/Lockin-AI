@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/theme.dart';
 import 'dashboard_screen.dart';
 import 'timer_screen.dart';
-import 'chat_screen.dart';
-import 'reports_screen.dart';
+import 'ai_tutor_screen.dart';
+import 'focus_monitor_screen.dart';
 import 'profile_tab.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,8 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = const [
     DashboardScreen(),
     TimerScreen(),
-    ChatScreen(),
-    ReportsScreen(),
+    AITutorScreen(),
+    FocusMonitorScreen(),
     ProfileTab(),
   ];
 
@@ -62,12 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),
               activeIcon: Icon(Icons.chat_bubble),
-              label: 'Chat',
+              label: 'AI Tutor',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_outlined),
-              activeIcon: Icon(Icons.bar_chart),
-              label: 'Reports',
+              icon: Icon(Icons.shield_outlined),
+              activeIcon: Icon(Icons.shield),
+              label: 'Guardian',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
