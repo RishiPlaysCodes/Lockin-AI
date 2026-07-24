@@ -1,4 +1,4 @@
-# Focus Guardian AI
+# Focus Guardian AI (LockIn AI)
 
 **Enterprise-grade focus & study session tracking with AI-powered coaching.**
 
@@ -14,7 +14,7 @@ Focus Guardian AI helps students and professionals stay focused during study/wor
 - **AI Teacher** - OpenAI-powered study companion for explanations, tips, and motivation
 - **Study Reports** - Detailed analytics on sessions, distractions, and streaks
 - **Health Monitoring** - Built-in health check endpoints for infrastructure monitoring
-- **API Documentation** - Auto-generated OpenAPI/Swagger docs
+- **API Documentation** - Auto-generated OpenAPI/Swagger docs at `/api/docs/`
 
 ---
 
@@ -24,100 +24,120 @@ Focus Guardian AI helps students and professionals stay focused during study/wor
 |-----------|-----------|
 | Backend | Django 5.1+ / Django REST Framework |
 | Authentication | JWT (Simple JWT) |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 16 (SQLite for dev) |
 | Cache | Redis 7 |
 | AI | OpenAI GPT-4o-mini |
 | API Docs | drf-spectacular (OpenAPI 3.0) |
-| Deployment | Docker, Docker Compose, Gunicorn, Nginx |
+| Deployment | Google Cloud Run (Free Tier) |
 | CI/CD | GitHub Actions |
 | Monitoring | django-health-check, structured JSON logging |
 
 ---
 
-## Quick Start
+## Quick Start (VS Code)
 
-### Prerequisites
-
-- Python 3.11+
-- PostgreSQL 16+ (or SQLite for development)
-- Redis 7+ (optional for development)
-- OpenAI API key (optional - works with mock responses)
-
-### Local Development
+> **Full detailed guide with screenshots:** [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
 
 ```bash
-# Clone the repository
+# 1. Clone
 git clone https://github.com/RishiPlaysCodes/Lockin-AI.git
 cd Lockin-AI
 
-# Create virtual environment
+# 2. Virtual Environment
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
+# 3. Install
 pip install -r requirements/development.txt
 
-# Configure environment
+# 4. Configure
 cp .env.example .env
-# Edit .env with your settings
+# Edit .env file (DJANGO_SETTINGS_MODULE=focus_guardian.settings.development)
 
-# Run migrations
-python src/manage.py migrate
+# 5. Migrate & Seed
+cd src
+python manage.py migrate
+python manage.py seed_data   # Creates demo user: demo / DemoPass123!
+python manage.py createsuperuser
 
-# Seed sample data (optional)
-python src/manage.py seed_data
-
-# Run development server
-python src/manage.py runserver
+# 6. Run
+python manage.py runserver
 ```
 
-### Using Docker
+Then open:
+- **API Docs:** http://127.0.0.1:8000/api/docs/
+- **Admin:** http://127.0.0.1:8000/admin/
+- **Health:** http://127.0.0.1:8000/health/
+
+---
+
+## Running Tests
 
 ```bash
-# Development
-docker compose -f docker-compose.dev.yml up
+# All tests
+pytest
 
-# Production
-cp .env.example .env  # Edit with real values
-docker compose up -d
-```
+# With coverage
+pytest --cov=core --cov-report=term-missing
 
-### Using Makefile
-
-```bash
-make install        # Install dependencies
-make migrate        # Run migrations
-make dev            # Start dev server
-make test           # Run tests
-make lint           # Run linters
-make docker-up      # Start with Docker
-make help           # Show all commands
+# Specific tests
+pytest tests/core/test_api.py -v
+pytest tests/integration/test_workflows.py -v
 ```
 
 ---
 
-## API Documentation
+## Deploy to Google Cloud (FREE)
 
-Once running, access the interactive API docs at:
+> **Full step-by-step guide:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-- **Swagger UI**: `http://localhost:8000/api/docs/`
-- **OpenAPI Schema**: `http://localhost:8000/api/schema/`
-- **Health Check**: `http://localhost:8000/health/`
+Google Cloud Run **Always Free Tier** gives you:
+- 2 Million requests/month
+- 180,000 vCPU-seconds
+- 360,000 GiB-seconds memory
 
-### Key Endpoints
+**Quick Deploy:**
+```bash
+# Install gcloud CLI, then:
+gcloud init
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com
+
+gcloud run deploy focus-guardian \
+  --source=. \
+  --region=us-central1 \
+  --allow-unauthenticated \
+  --memory=512Mi \
+  --set-env-vars="DJANGO_SETTINGS_MODULE=focus_guardian.settings.production"
+```
+
+Your app will be live at `https://focus-guardian-xxxxx-uc.a.run.app`
+
+---
+
+## Test on Phone
+
+1. Run `python manage.py runserver 0.0.0.0:8000`
+2. Find your PC's IP (e.g., `192.168.1.5`)
+3. On phone: open `http://192.168.1.5:8000/api/docs/`
+
+---
+
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/v1/auth/register/` | Register new user |
-| POST | `/api/v1/auth/token/` | Get JWT tokens |
+| POST | `/api/v1/auth/token/` | Get JWT tokens (login) |
 | POST | `/api/v1/auth/token/refresh/` | Refresh access token |
+| POST | `/api/v1/auth/logout/` | Logout (blacklist token) |
 | GET | `/api/v1/profile/` | Get user profile |
+| PATCH | `/api/v1/profile/` | Update profile settings |
 | POST | `/api/v1/sessions/start/` | Start focus session |
 | POST | `/api/v1/sessions/end/` | End active session |
+| GET | `/api/v1/sessions/` | List all sessions |
 | POST | `/api/v1/distractions/` | Log distraction |
 | GET | `/api/v1/reports/study/` | Get study report |
-| GET | `/api/v1/reports/stats/` | Get aggregated stats |
+| GET | `/api/v1/reports/stats/` | Get user statistics |
 | POST | `/api/v1/ai-teacher/` | Chat with AI teacher |
 
 ---
@@ -129,85 +149,48 @@ Lockin-AI/
 ├── src/                          # Application source code
 │   ├── manage.py                 # Django management script
 │   ├── focus_guardian/           # Project configuration
-│   │   ├── settings/            # Environment-specific settings
-│   │   │   ├── base.py          # Shared settings
-│   │   │   ├── development.py   # Dev settings
-│   │   │   ├── production.py    # Production settings
-│   │   │   └── testing.py       # Test settings
-│   │   ├── urls.py              # Root URL configuration
-│   │   ├── wsgi.py              # WSGI entry point
-│   │   └── asgi.py              # ASGI entry point
+│   │   └── settings/            # Environment-specific settings
+│   │       ├── base.py          # Shared settings
+│   │       ├── development.py   # Dev (SQLite, DEBUG=True)
+│   │       ├── production.py    # Production (PostgreSQL, security)
+│   │       └── testing.py       # Test (in-memory SQLite, fast)
 │   └── core/                    # Main application
-│       ├── api/v1/              # API v1 views and URLs
-│       ├── exceptions/          # Custom exception handlers
-│       ├── management/commands/ # Management commands
-│       ├── middleware/          # Custom middleware
-│       ├── services/            # Business logic layer
-│       ├── templates/           # HTML templates
+│       ├── api/v1/              # API views and URL routing
+│       ├── services/            # Business logic (session, AI)
+│       ├── exceptions/          # Custom error handling
+│       ├── middleware/          # Request logging, JSON formatter
+│       ├── management/commands/ # seed_data command
 │       ├── models.py            # Data models
-│       ├── serializers.py       # DRF serializers
-│       └── admin.py             # Admin configuration
-├── tests/                       # Test suite
-│   ├── conftest.py              # Shared fixtures
-│   ├── core/                    # Unit tests
-│   └── integration/             # Integration tests
-├── config/nginx/                # Nginx configuration
-├── requirements/                # Python dependencies
-│   ├── base.txt                 # Core dependencies
-│   ├── development.txt          # Dev tools
-│   └── production.txt           # Production extras
-├── docker-compose.yml           # Production Docker setup
-├── docker-compose.dev.yml       # Development Docker setup
-├── Dockerfile                   # Multi-stage production build
-├── Makefile                     # Common commands
-├── pyproject.toml               # Project config (ruff, mypy, coverage)
-├── pytest.ini                   # Test configuration
-├── .env.example                 # Environment template
+│       ├── serializers.py       # API serializers
+│       └── admin.py             # Admin panel config
+├── tests/                       # Test suite (40+ tests)
+├── docs/                        # Documentation
+│   ├── LOCAL_SETUP.md           # VS Code testing guide
+│   └── DEPLOYMENT.md            # Google Cloud deployment guide
+├── config/nginx/                # Nginx config (Docker deploy)
+├── requirements/                # Dependencies (base/dev/prod)
+├── Dockerfile                   # Production container
+├── docker-compose.yml           # Full stack (Docker)
+├── Makefile                     # Developer commands
+├── pyproject.toml               # Linting/testing config
 └── .github/workflows/ci.yml    # CI/CD pipeline
 ```
 
 ---
 
-## Testing
+## Using Makefile
 
 ```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test-cov
-
-# Run specific test file
-pytest tests/core/test_api.py -v
-
-# Run specific test class
-pytest tests/core/test_api.py::TestFocusSession -v
+make help           # Show all commands
+make install        # Install dependencies
+make dev            # Start dev server
+make test           # Run tests
+make test-cov       # Tests with coverage
+make lint           # Run linters
+make format         # Auto-format code
+make migrate        # Run migrations
+make docker-up      # Start with Docker
 ```
-
----
-
-## Deployment
-
-### Production Checklist
-
-1. Set all environment variables (see `.env.example`)
-2. Use a strong, unique `DJANGO_SECRET_KEY`
-3. Set `DJANGO_DEBUG=False`
-4. Configure `DJANGO_ALLOWED_HOSTS`
-5. Set up PostgreSQL database
-6. Configure Redis for caching
-7. Enable HTTPS with proper SSL certificates
-8. Set `CORS_ALLOWED_ORIGINS` to your frontend domain(s)
-9. Configure email settings for notifications
-10. Set up monitoring (Sentry DSN, log aggregation)
-
-### Health Monitoring
-
-The `/health/` endpoint checks:
-- Database connectivity
-- Cache availability
-
-Returns HTTP 200 when healthy, 503 when degraded.
 
 ---
 
@@ -215,13 +198,16 @@ Returns HTTP 200 when healthy, 503 when degraded.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Run tests and linting (`make test && make lint`)
+3. Run tests (`pytest`)
 4. Commit your changes
-5. Push to the branch
-6. Open a Pull Request
+5. Push and open a Pull Request
 
 ---
 
 ## License
 
 This project is private. All rights reserved.
+
+---
+
+Built with Django + DRF + OpenAI | Deployed on Google Cloud Run

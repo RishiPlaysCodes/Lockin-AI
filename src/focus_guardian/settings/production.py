@@ -29,22 +29,40 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
 # Database - PostgreSQL for production
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "focus_guardian"),
-        "USER": os.environ.get("DB_USER", "focus_guardian"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST", "db"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
-        "CONN_MAX_AGE": 600,
-        "CONN_HEALTH_CHECKS": True,
-        "OPTIONS": {
-            "connect_timeout": 10,
-            "options": "-c statement_timeout=30000",
-        },
+# Supports both TCP connections (Docker) and Unix sockets (Cloud Run + Cloud SQL)
+DB_HOST = os.environ.get("DB_HOST", "db")
+
+if DB_HOST.startswith("/"):
+    # Cloud SQL Unix socket connection
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "focus_guardian"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": DB_HOST,
+            "CONN_MAX_AGE": 600,
+            "CONN_HEALTH_CHECKS": True,
+        }
     }
-}
+else:
+    # Standard TCP connection (Docker / local PostgreSQL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "focus_guardian"),
+            "USER": os.environ.get("DB_USER", "focus_guardian"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": DB_HOST,
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            "CONN_MAX_AGE": 600,
+            "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": {
+                "connect_timeout": 10,
+                "options": "-c statement_timeout=30000",
+            },
+        }
+    }
 
 # Cache - Redis for production
 CACHES = {
