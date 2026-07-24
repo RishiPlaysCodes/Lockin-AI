@@ -1,0 +1,67 @@
+# Google Cloud Run service configuration
+# Deploy with: gcloud run services replace cloudrun.yaml --region=us-central1
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: focus-guardian
+  annotations:
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Scale to zero when not in use (saves cost)
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "2"
+        # Cloud SQL connection
+        run.googleapis.com/cloudsql-instances: "PROJECT_ID:us-central1:focus-guardian-db"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 120
+      containers:
+        - image: gcr.io/PROJECT_ID/focus-guardian:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: "focus_guardian.settings.production"
+            - name: DJANGO_ALLOWED_HOSTS
+              value: "*.run.app"
+            - name: DB_NAME
+              value: "focus_guardian"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_HOST
+              value: "/cloudsql/PROJECT_ID:us-central1:focus-guardian-db"
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-secret-key
+                  key: latest
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: latest
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            periodSeconds: 30

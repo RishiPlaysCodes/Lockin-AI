@@ -60,15 +60,15 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 
 # Run with gunicorn
 EXPOSE ${PORT}
-CMD ["gunicorn", "focus_guardian.wsgi:application", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "4", \
-     "--worker-class", "gthread", \
-     "--threads", "2", \
-     "--worker-tmp-dir", "/dev/shm", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--timeout", "120", \
-     "--graceful-timeout", "30", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "50"]
+CMD exec gunicorn focus_guardian.wsgi:application \
+     --bind 0.0.0.0:${PORT} \
+     --workers 2 \
+     --worker-class gthread \
+     --threads 2 \
+     --worker-tmp-dir /dev/shm \
+     --access-logfile - \
+     --error-logfile - \
+     --timeout 120 \
+     --graceful-timeout 30 \
+     --max-requests 1000 \
+     --max-requests-jitter 50
