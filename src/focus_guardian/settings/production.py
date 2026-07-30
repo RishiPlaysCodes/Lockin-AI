@@ -36,8 +36,17 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 # CORS - Restrict to specific origins
+# Filter out empty strings so an unset env var doesn't produce [''] (which
+# corsheaders rejects with E013). Empty list = no cross-origin allowed.
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
+
+# Allow the app's own Render URL to make same-origin API calls from the
+# built-in frontend templates.
+if RENDER_EXTERNAL_HOSTNAME:
+    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 # Database configuration
 # Priority 1: DATABASE_URL (used by Render.com, Heroku, Railway, etc.)
