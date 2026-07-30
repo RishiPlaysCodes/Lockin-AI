@@ -19,13 +19,14 @@ databases:
     databaseName: focus_guardian
     user: focus_guardian
     plan: free
+    region: oregon   # Must match the web service region below
 
 services:
   - type: web
     name: focus-guardian
     runtime: python
     plan: free
-    region: singapore   # Closest to India; change if you prefer (oregon/frankfurt)
+    region: oregon   # Must match the database region (internal DB connection needs same region)
     buildCommand: "./build.sh"
     startCommand: "cd src && gunicorn focus_guardian.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120"
     healthCheckPath: /health/

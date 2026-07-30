@@ -1,5 +1,6 @@
 # Core dependencies
-Django>=5.1,<6.1
+# Pinned to Django 5.2 LTS for long-term stability (avoids 6.0 breaking changes).
+Django>=5.2,<6.0
 djangorestframework>=3.15,<4.0
 djangorestframework-simplejwt>=5.3,<6.0
 django-cors-headers>=4.4,<5.0

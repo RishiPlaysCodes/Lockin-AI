@@ -115,12 +115,12 @@ class FocusSession(TimeStampedModel):
         verbose_name = "Focus Session"
         verbose_name_plural = "Focus Sessions"
         indexes = [
-            models.Index(fields=["user", "is_active"]),
-            models.Index(fields=["user", "-start_time"]),
+            models.Index(fields=["user", "is_active"], name="fs_user_active_idx"),
+            models.Index(fields=["user", "-start_time"], name="fs_user_start_idx"),
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(end_time__isnull=True) | models.Q(end_time__gte=models.F("start_time")),
+                condition=models.Q(end_time__isnull=True) | models.Q(end_time__gte=models.F("start_time")),
                 name="end_time_after_start_time",
             ),
         ]
@@ -183,7 +183,7 @@ class Distraction(TimeStampedModel):
         verbose_name = "Distraction"
         verbose_name_plural = "Distractions"
         indexes = [
-            models.Index(fields=["session", "-timestamp"]),
+            models.Index(fields=["session", "-timestamp"], name="distr_sess_ts_idx"),
         ]
 
     def __str__(self):

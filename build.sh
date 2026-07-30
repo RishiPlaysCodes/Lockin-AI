@@ -16,7 +16,7 @@ cd src
 python manage.py collectstatic --no-input
 
 echo "=== Running database migrations ==="
-python manage.py migrate
+python manage.py migrate --no-input
 
 echo "=== Creating superuser (if configured) ==="
 # Only creates if DJANGO_SUPERUSER_* env vars are set in Render dashboard
