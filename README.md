@@ -117,30 +117,32 @@ pytest tests/integration/test_workflows.py -v
 
 ---
 
-## Deploy to Google Cloud (FREE)
+## Deploy Online for FREE
+
+### Option 1: Render.com (Easiest — No Credit Card) ⭐ Recommended
+
+> **Full beginner guide:** [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md)
+
+The repo includes a `render.yaml` blueprint, so deployment is nearly one-click:
+1. Push code to GitHub (already done)
+2. Sign up at [render.com](https://render.com) with GitHub (no card needed)
+3. Go to [Blueprints](https://dashboard.render.com/blueprints) → New Blueprint Instance
+4. Select your repo → Apply
+
+Render auto-creates the web service + PostgreSQL, runs migrations, and gives you a
+live URL like `https://focus-guardian.onrender.com` — open it on any device.
+
+### Option 2: Google Cloud Run (Free Tier, needs a card on file)
 
 > **Full step-by-step guide:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-Google Cloud Run **Always Free Tier** gives you:
-- 2 Million requests/month
-- 180,000 vCPU-seconds
-- 360,000 GiB-seconds memory
+Always Free Tier: 2M requests/month, 180K vCPU-seconds, 360K GiB-seconds.
 
-**Quick Deploy:**
 ```bash
-# Install gcloud CLI, then:
-gcloud init
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com
-
-gcloud run deploy focus-guardian \
-  --source=. \
-  --region=us-central1 \
-  --allow-unauthenticated \
-  --memory=512Mi \
+gcloud run deploy focus-guardian --source=. --region=us-central1 \
+  --allow-unauthenticated --memory=512Mi \
   --set-env-vars="DJANGO_SETTINGS_MODULE=focus_guardian.settings.production"
 ```
-
-Your app will be live at `https://focus-guardian-xxxxx-uc.a.run.app`
 
 ---
 

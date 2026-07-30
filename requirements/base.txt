@@ -17,6 +17,7 @@ openai>=1.40,<2.0
 
 # Database (PostgreSQL for production)
 psycopg[binary]>=3.2,<4.0
+dj-database-url>=2.2,<3.0
 
 # Redis
 django-redis>=5.4,<6.0

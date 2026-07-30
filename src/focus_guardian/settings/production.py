@@ -10,7 +10,18 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]  # Will raise if not set
 
 DEBUG = False
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
+
+# Render.com automatically provides the external hostname.
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"]
+
+# Fallback so the app never crashes with an empty ALLOWED_HOSTS in a
+# managed platform (Render/Cloud Run both terminate TLS in front of us).
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [".onrender.com", ".run.app"]
 
 # HTTPS / Security Headers
 SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "True") == "True"
@@ -28,11 +39,25 @@ X_FRAME_OPTIONS = "DENY"
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
-# Database - PostgreSQL for production
-# Supports both TCP connections (Docker) and Unix sockets (Cloud Run + Cloud SQL)
+# Database configuration
+# Priority 1: DATABASE_URL (used by Render.com, Heroku, Railway, etc.)
+# Priority 2: Individual DB_* env vars (Docker / Cloud SQL Unix socket)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 DB_HOST = os.environ.get("DB_HOST", "db")
 
-if DB_HOST.startswith("/"):
+if DATABASE_URL:
+    # Parse the connection URL provided by the hosting platform.
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=os.getenv("DB_SSL_REQUIRE", "True") == "True",
+        )
+    }
+elif DB_HOST.startswith("/"):
     # Cloud SQL Unix socket connection
     DATABASES = {
         "default": {
