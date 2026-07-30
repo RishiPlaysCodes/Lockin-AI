@@ -1,0 +1,60 @@
+# ============================================================
+# Focus Guardian AI - .gitignore
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.log
+src/staticfiles/
+src/media/
+src/logs/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Type checking
+.mypy_cache/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Secrets (NEVER commit these)
+.env
+.env.local
+.env.production
+*.pem
+*.key

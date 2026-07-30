@@ -1,0 +1,8 @@
+# Production dependencies
+-r base.txt
+
+# Monitoring
+sentry-sdk[django]>=2.13,<3.0
+
+# Celery (for background tasks)
+celery[redis]>=5.4,<6.0
