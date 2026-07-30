@@ -10,6 +10,11 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Ensure the logs directory exists (cross-platform, prevents startup crash
+# on a fresh clone regardless of OS - Windows, macOS, Linux, Android/Termux).
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 # Application definition
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -179,7 +184,7 @@ LOGGING = {
         "file": {
             "level": "WARNING",
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "focus_guardian.log",
+            "filename": LOGS_DIR / "focus_guardian.log",
             "maxBytes": 10 * 1024 * 1024,  # 10MB
             "backupCount": 5,
             "formatter": "json",
