@@ -1,142 +1,178 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Timer - Focus Guardian AI</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YcnS/1WiQDTl9EI0FGFmPicF/X6s4nkjZPE" crossorigin="anonymous">
-    <style>
-        .timer-display { font-size: 5rem; font-weight: bold; font-family: 'Courier New', monospace; }
-        #distraction-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            font-size: 2rem;
-            flex-direction: column;
-        }
-    </style>
+    <title>Focus Session - Focus Guardian AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
 </head>
-<body class="bg-light">
-    <div id="distraction-overlay">
-        <h1>STAY FOCUSED!</h1>
-        <p>Get back to work - you've got this!</p>
+<body>
+    <div class="app-shell">
+        <nav class="navbar">
+            <a href="/dashboard/" class="brand">
+                <span class="brand-logo">&#9673;</span>
+                Focus Guardian AI
+            </a>
+            <div class="nav-right">
+                <a href="/dashboard/" class="btn btn-ghost">&#8592; Dashboard</a>
+            </div>
+        </nav>
+
+        <main class="container-app">
+            <div class="text-center mb-4">
+                <h1 class="page-title">Focus Session</h1>
+                <p class="page-subtitle" id="session-state">Ready to start a 25-minute Pomodoro session.</p>
+            </div>
+
+            <div class="timer-wrap">
+                <div class="timer-ring">
+                    <svg width="280" height="280" viewBox="0 0 280 280">
+                        <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="track" cx="140" cy="140" r="125"/>
+                        <circle class="progress" id="ring" cx="140" cy="140" r="125"
+                                stroke-dasharray="785.4" stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="timer-time" id="timer">25:00</div>
+                </div>
+
+                <div class="timer-controls">
+                    <button class="btn btn-success btn-lg" id="start-btn">&#9654;&nbsp; Start</button>
+                    <button class="btn btn-danger btn-lg hidden" id="stop-btn">&#9632;&nbsp; End Session</button>
+                </div>
+
+                <div class="card" style="max-width:420px; width:100%;">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="stat-label">Distractions this session</div>
+                            <div class="stat-value" id="distraction-count" style="font-size:1.6rem;">0</div>
+                        </div>
+                        <button class="btn btn-ghost" id="distraction-btn" disabled>Log distraction</button>
+                    </div>
+                    <p class="form-hint mt-4">Tip: switching browser tabs during a session is automatically logged as a distraction.</p>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div class="container text-center mt-5">
-        <h1 class="mb-4">Focus Session</h1>
-        <div class="timer-display my-4" id="timer">25:00</div>
-        
-        <div class="controls">
-            <button id="start-btn" class="btn btn-success btn-lg me-2">Start</button>
-            <button id="stop-btn" class="btn btn-danger btn-lg" disabled>End Session</button>
-        </div>
-
-        <div class="mt-4">
-            <h5>Simulate Distraction (for testing)</h5>
-            <button id="simulate-distraction" class="btn btn-warning btn-sm">Switch App (Simulate)</button>
-        </div>
-        
-        <div class="mt-3">
-            <a href="/dashboard/" class="btn btn-link">Back to Dashboard</a>
-        </div>
-    </div>
-
+    <script src="{% static 'core/js/app.js' %}"></script>
     <script>
-        const API_BASE = '/api/v1';
+        if (!FG.Auth.requireAuth()) { /* redirected */ }
 
-        // Auth guard: redirect to login if no token
-        if (!localStorage.getItem('access_token')) {
-            window.location.href = '/';
+        const TOTAL = 25 * 60;
+        const CIRC = 2 * Math.PI * 125; // ~785.4
+        let timeLeft = TOTAL;
+        let interval = null;
+        let active = false;
+        let distractions = 0;
+
+        const timerEl = document.getElementById("timer");
+        const ring = document.getElementById("ring");
+        const startBtn = document.getElementById("start-btn");
+        const stopBtn = document.getElementById("stop-btn");
+        const distractionBtn = document.getElementById("distraction-btn");
+        const stateEl = document.getElementById("session-state");
+        const countEl = document.getElementById("distraction-count");
+
+        ring.setAttribute("stroke-dasharray", CIRC.toFixed(1));
+
+        function render() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            timerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+            const progress = (TOTAL - timeLeft) / TOTAL;
+            ring.setAttribute("stroke-dashoffset", (CIRC * (1 - progress)).toFixed(1));
         }
 
-        function getAuthHeaders() {
-            const token = localStorage.getItem('access_token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            return headers;
+        async function startSession() {
+            startBtn.disabled = true;
+            const res = await FG.apiFetch("/sessions/start/", {
+                method: "POST",
+                body: JSON.stringify({ session_type: "pomodoro", planned_duration_minutes: 25 }),
+            });
+            if (!res.ok) {
+                FG.toast(FG.extractError(res.data, "Could not start session."), "error");
+                startBtn.disabled = false;
+                return;
+            }
+            active = true;
+            distractions = 0;
+            countEl.textContent = "0";
+            timeLeft = TOTAL;
+            render();
+            startBtn.classList.add("hidden");
+            stopBtn.classList.remove("hidden");
+            distractionBtn.disabled = false;
+            stateEl.textContent = "Session in progress — stay focused!";
+            FG.toast("Focus session started. You've got this!", "success");
+            interval = setInterval(tick, 1000);
         }
 
-        let timeLeft = 25 * 60;
-        let timerInterval = null;
-        let sessionActive = false;
-
-        const timerDisplay = document.getElementById('timer');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        function tick() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                render();
+            } else {
+                FG.toast("Time's up! Great work.", "success");
+                endSession();
+            }
         }
 
-        startBtn.addEventListener('click', () => {
-            fetch(`${API_BASE}/sessions/start/`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ session_type: 'pomodoro', planned_duration_minutes: 25 })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.id) {
-                    sessionActive = true;
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    timerInterval = setInterval(() => {
-                        if (timeLeft > 0) {
-                            timeLeft--;
-                            updateTimer();
-                        } else {
-                            clearInterval(timerInterval);
-                            document.getElementById('stop-btn').click();
-                        }
-                    }, 1000);
-                }
+        async function endSession() {
+            clearInterval(interval);
+            stopBtn.disabled = true;
+            const res = await FG.apiFetch("/sessions/end/", { method: "POST" });
+            active = false;
+            if (res.ok) {
+                FG.toast("Session complete. Redirecting to dashboard...", "success");
+                setTimeout(() => window.location.href = "/dashboard/", 1200);
+            } else {
+                FG.toast(FG.extractError(res.data, "Could not end session."), "error");
+                stopBtn.disabled = false;
+            }
+        }
+
+        async function logDistraction(appName, type) {
+            if (!active) return;
+            distractions++;
+            countEl.textContent = String(distractions);
+            const res = await FG.apiFetch("/distractions/", {
+                method: "POST",
+                body: JSON.stringify({ app_name: appName, distraction_type: type }),
             });
+            if (!res.ok) {
+                distractions--;
+                countEl.textContent = String(distractions);
+            }
+        }
+
+        startBtn.addEventListener("click", startSession);
+        stopBtn.addEventListener("click", endSession);
+        distractionBtn.addEventListener("click", () => {
+            logDistraction("Manual", "manual");
+            FG.toast("Distraction logged.", "info", 1800);
         });
 
-        stopBtn.addEventListener('click', () => {
-            fetch(`${API_BASE}/sessions/end/`, {
-                method: 'POST',
-                headers: getAuthHeaders()
-            })
-            .then(() => {
-                clearInterval(timerInterval);
-                sessionActive = false;
-                window.location.href = '/dashboard/';
-            });
-        });
-
-        document.getElementById('simulate-distraction').addEventListener('click', () => {
-            if (!sessionActive) return;
-            
-            const overlay = document.getElementById('distraction-overlay');
-            overlay.style.display = 'flex';
-            setTimeout(() => { overlay.style.display = 'none'; }, 2000);
-
-            fetch(`${API_BASE}/distractions/`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ app_name: 'Simulated Distraction', distraction_type: 'mock' })
-            });
-        });
-
-        // Detect tab visibility changes as distractions
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && sessionActive) {
-                fetch(`${API_BASE}/distractions/`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ app_name: 'Browser Tab Switch', distraction_type: 'visibility_change' })
-                });
+        // Auto-detect tab switches as distractions
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && active) {
+                logDistraction("Browser Tab Switch", "visibility_change");
             }
         });
+
+        // Warn before leaving mid-session
+        window.addEventListener("beforeunload", (e) => {
+            if (active) { e.preventDefault(); e.returnValue = ""; }
+        });
+
+        render();
     </script>
 </body>
 </html>
