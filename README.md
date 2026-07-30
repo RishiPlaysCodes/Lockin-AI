@@ -36,38 +36,68 @@ Focus Guardian AI helps students and professionals stay focused during study/wor
 
 ## Quick Start (VS Code)
 
-> **Full detailed guide with screenshots:** [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
+## Runs on Everything
+
+**Windows | macOS | Linux | Android (Termux)** — one universal launcher handles it all.
+
+> **Detailed per-platform guide:** [docs/CROSS_PLATFORM.md](docs/CROSS_PLATFORM.md)
+
+### The One-Command Way (Any Platform)
+
+After installing Python 3.11+ and cloning the repo:
 
 ```bash
-# 1. Clone
 git clone https://github.com/RishiPlaysCodes/Lockin-AI.git
 cd Lockin-AI
-
-# 2. Virtual Environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. Install
-pip install -r requirements/development.txt
-
-# 4. Configure
-cp .env.example .env
-# Edit .env file (DJANGO_SETTINGS_MODULE=focus_guardian.settings.development)
-
-# 5. Migrate & Seed
-cd src
-python manage.py migrate
-python manage.py seed_data   # Creates demo user: demo / DemoPass123!
-python manage.py createsuperuser
-
-# 6. Run
-python manage.py runserver
+python run.py          # (use python3 run.py on Mac/Linux/Termux)
 ```
+
+That's it! `run.py` auto-detects your OS, creates a virtual environment, installs
+dependencies, runs migrations, seeds demo data, and starts the server. It even
+prints a **Network URL** you can open on your phone (same WiFi).
+
+**Platform-specific launchers** (do the same thing):
+
+| Platform | Command |
+|----------|---------|
+| Windows | Double-click **`run.bat`** or run `.\run.ps1` |
+| macOS / Linux | `./run.sh` |
+| Android (Termux) | `python run.py` |
+
+**Launcher sub-commands:** `setup`, `serve`, `test`, `seed`
+(e.g. `python run.py serve` or `run.bat test`)
 
 Then open:
 - **API Docs:** http://127.0.0.1:8000/api/docs/
 - **Admin:** http://127.0.0.1:8000/admin/
 - **Health:** http://127.0.0.1:8000/health/
+
+---
+
+### Manual Setup (if you prefer step-by-step)
+
+> **Full detailed guide:** [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
+
+```bash
+# 1. Virtual Environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 2. Install
+pip install -r requirements/development.txt
+
+# 3. Configure
+cp .env.example .env      # Windows: copy .env.example .env
+
+# 4. Migrate & Seed
+cd src
+python manage.py migrate
+python manage.py seed_data   # Creates demo user: demo / DemoPass123!
+python manage.py createsuperuser
+
+# 5. Run
+python manage.py runserver
+```
 
 ---
 
@@ -166,9 +196,14 @@ Lockin-AI/
 ├── tests/                       # Test suite (40+ tests)
 ├── docs/                        # Documentation
 │   ├── LOCAL_SETUP.md           # VS Code testing guide
+│   ├── CROSS_PLATFORM.md        # Windows/Mac/Linux/Android guide
 │   └── DEPLOYMENT.md            # Google Cloud deployment guide
 ├── config/nginx/                # Nginx config (Docker deploy)
 ├── requirements/                # Dependencies (base/dev/prod)
+├── run.py                       # Universal cross-platform launcher
+├── run.sh                       # Mac/Linux/Termux launcher
+├── run.bat                      # Windows CMD launcher (double-click)
+├── run.ps1                      # Windows PowerShell launcher
 ├── Dockerfile                   # Production container
 ├── docker-compose.yml           # Full stack (Docker)
 ├── Makefile                     # Developer commands
