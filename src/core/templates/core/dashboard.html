@@ -89,7 +89,7 @@
                 document.getElementById('total-study-time').textContent = data.total_study_time_formatted;
                 document.getElementById('streak-days').textContent = data.streak_days + ' days';
             })
-            .catch(() => { window.location.href = '/api/docs/'; });
+            .catch(() => { window.location.href = '/'; });
 
         // Load report
         fetch(`${API_BASE}/reports/study/`, { headers: getAuthHeaders() })
@@ -120,7 +120,7 @@
             }).finally(() => {
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                window.location.href = '/api/docs/';
+                window.location.href = '/';
             });
         });
     </script>

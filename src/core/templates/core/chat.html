@@ -39,6 +39,11 @@
     <script>
         const API_BASE = '/api/v1';
 
+        // Auth guard: redirect to login if no token
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = '/';
+        }
+
         function getAuthHeaders() {
             const token = localStorage.getItem('access_token');
             const headers = { 'Content-Type': 'application/json' };

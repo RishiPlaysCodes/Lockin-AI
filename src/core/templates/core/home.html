@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Guardian AI - Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YcnS/1WiQDTl9EI0FGFmPicF/X6s4nkjZPE" crossorigin="anonymous">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .auth-card {
+            max-width: 420px;
+            margin: auto;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .brand { font-weight: 800; color: #4a3f9f; }
+        .tab-btn.active { background: #667eea; color: white; }
+        .msg { font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card auth-card">
+            <div class="card-body p-4">
+                <h2 class="text-center brand mb-1">Focus Guardian AI</h2>
+                <p class="text-center text-muted mb-4">Stay focused. Study smarter.</p>
+
+                <div class="d-flex mb-4 border rounded overflow-hidden">
+                    <button class="btn tab-btn active flex-fill" id="tab-login" onclick="switchTab('login')">Login</button>
+                    <button class="btn tab-btn flex-fill" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+                </div>
+
+                <div id="message" class="alert d-none msg" role="alert"></div>
+
+                <!-- LOGIN FORM -->
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="login-username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="login-btn">Login</button>
+                </form>
+
+                <!-- SIGNUP FORM -->
+                <form id="signup-form" class="d-none">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="signup-username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="signup-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="signup-password" required minlength="10">
+                        <small class="text-muted">At least 10 characters.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="signup-password2" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100" id="signup-btn">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        // If already logged in, go straight to dashboard
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '/dashboard/';
+        }
+
+        function switchTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+            loginForm.classList.toggle('d-none', tab !== 'login');
+            signupForm.classList.toggle('d-none', tab !== 'signup');
+            hideMessage();
+        }
+
+        function showMessage(text, type) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = `alert msg alert-${type}`;
+        }
+        function hideMessage() {
+            document.getElementById('message').className = 'alert d-none msg';
+        }
+
+        function saveTokensAndGo(access, refresh) {
+            localStorage.setItem('access_token', access);
+            if (refresh) localStorage.setItem('refresh_token', refresh);
+            window.location.href = '/dashboard/';
+        }
+
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true; btn.textContent = 'Logging in...';
+            hideMessage();
+            try {
+                const res = await fetch(`${API_BASE}/auth/token/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('login-username').value,
+                        password: document.getElementById('login-password').value
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.access) {
+                    saveTokensAndGo(data.access, data.refresh);
+                } else {
+                    showMessage('Invalid username or password.', 'danger');
+                }
+            } catch (err) {
+                showMessage('Connection error. Please try again.', 'danger');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Login';
+            }
+        });
+
+        // SIGNUP
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('signup-btn');
+            const pass = document.getElementById('signup-password').value;
+            const pass2 = document.getElementById('signup-password2').value;
+            if (pass !== pass2) {
+                showMessage('Passwords do not match.', 'danger');
+                return;
+            }
+            btn.disabled = true; btn.textContent = 'Creating account...';
+            hideMessage();
+            try {
+                const res = await fetch(`${API_BASE}/auth/register/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('signup-username').value,
+                        email: document.getElementById('signup-email').value,
+                        password: pass,
+                        password_confirm: pass2
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.tokens) {
+                    saveTokensAndGo(data.tokens.access, data.tokens.refresh);
+                } else {
+                    let msg = 'Signup failed. ';
+                    if (data.error && data.error.details) {
+                        msg += JSON.stringify(data.error.details);
+                    }
+                    showMessage(msg, 'danger');
+                }
+            } catch (err) {
+                showMessage('Connection error. Please try again.', 'danger');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Create Account';
+            }
+        });
+    </script>
+</body>
+</html>
