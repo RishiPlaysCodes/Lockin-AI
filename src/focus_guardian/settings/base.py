@@ -217,7 +217,18 @@ CACHES = {
     }
 }
 
-# OpenAI Configuration
+# AI Provider Configuration
+# Gemini (FREE tier) takes priority. Falls back to OpenAI if only that is set.
+# Get a free Gemini key at: https://aistudio.google.com/apikey
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+# Gemini's OpenAI-compatible endpoint (lets us use the OpenAI SDK with Gemini).
+GEMINI_BASE_URL = os.getenv(
+    "GEMINI_BASE_URL",
+    "https://generativelanguage.googleapis.com/v1beta/openai/",
+)
+
+# OpenAI Configuration (optional, paid)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "1024"))

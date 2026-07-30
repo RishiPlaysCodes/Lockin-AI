@@ -46,9 +46,14 @@ services:
           property: connectionString
       - key: DISABLE_COLLECTSTATIC
         value: "0"
-      # OpenAI key is optional - app works with mock responses without it.
-      # Add your real key in the Render dashboard (Environment tab) if you have one:
-      - key: OPENAI_API_KEY
+      # AI Teacher: Gemini has a FREE tier. Get a key at https://aistudio.google.com/apikey
+      # Paste your key in the Render dashboard (Environment tab) - kept secret.
+      - key: GEMINI_API_KEY
         sync: false   # You set this manually in dashboard (keeps it secret)
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      # OpenAI is optional (paid). Only used if GEMINI_API_KEY is not set.
+      - key: OPENAI_API_KEY
+        sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini

@@ -1,6 +1,12 @@
 """
-AI Service - Handles OpenAI API communication.
-Encapsulates all AI-related logic with proper error handling and configuration.
+AI Service - Handles AI provider communication.
+
+Supports two providers out of the box:
+  - Google Gemini (FREE tier) via its OpenAI-compatible endpoint
+  - OpenAI (paid)
+
+Provider is auto-selected based on which API key is configured.
+Gemini takes priority since it has a free tier.
 """
 
 import logging
@@ -31,16 +37,40 @@ class AIResponse:
 
 
 class AITeacherService:
-    """Service for AI teacher interactions using OpenAI API."""
+    """
+    Service for AI teacher interactions.
+
+    Uses the OpenAI Python SDK for both providers:
+      - Gemini exposes an OpenAI-compatible endpoint, so we just point the
+        client at Google's base URL and use a Gemini model name.
+      - OpenAI uses its default base URL.
+    """
 
     def __init__(self):
-        self.api_key = settings.OPENAI_API_KEY
-        self.model = settings.OPENAI_MODEL
+        # Gemini takes priority (free tier). Fall back to OpenAI if set.
+        self.gemini_api_key = getattr(settings, "GEMINI_API_KEY", "")
+        self.openai_api_key = getattr(settings, "OPENAI_API_KEY", "")
         self.max_tokens = settings.OPENAI_MAX_TOKENS
 
+        if self.gemini_api_key:
+            self.provider = "gemini"
+            self.api_key = self.gemini_api_key
+            self.base_url = settings.GEMINI_BASE_URL
+            self.model = settings.GEMINI_MODEL
+        elif self.openai_api_key:
+            self.provider = "openai"
+            self.api_key = self.openai_api_key
+            self.base_url = None  # default OpenAI endpoint
+            self.model = settings.OPENAI_MODEL
+        else:
+            self.provider = "none"
+            self.api_key = ""
+            self.base_url = None
+            self.model = "mock"
+
     def is_configured(self) -> bool:
-        """Check if the AI service is properly configured."""
-        return bool(self.api_key)
+        """Check if any AI provider is configured."""
+        return self.provider != "none"
 
     def get_response(self, user_message: str, context: str = "") -> AIResponse:
         """
@@ -54,12 +84,13 @@ class AITeacherService:
             AIResponse with the reply or error information.
         """
         if not self.is_configured():
-            logger.warning("OpenAI API key not configured. Using mock response.")
+            logger.warning("No AI provider configured. Using mock response.")
             return AIResponse(
                 reply=(
                     f"I'm your Focus Guardian AI Teacher. You asked: '{user_message[:100]}'. "
                     "Keep focusing on your studies! "
-                    "(Note: AI service is not configured. Set OPENAI_API_KEY for full functionality.)"
+                    "(Note: AI is not configured. Set GEMINI_API_KEY (free) or OPENAI_API_KEY "
+                    "to enable real AI responses.)"
                 ),
                 model_used="mock",
                 success=True,
@@ -68,7 +99,11 @@ class AITeacherService:
         try:
             import openai
 
-            client = openai.OpenAI(api_key=self.api_key)
+            # Both providers use the OpenAI SDK; Gemini just needs a base_url.
+            client_kwargs = {"api_key": self.api_key}
+            if self.base_url:
+                client_kwargs["base_url"] = self.base_url
+            client = openai.OpenAI(**client_kwargs)
 
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -85,17 +120,21 @@ class AITeacherService:
             )
 
             reply = response.choices[0].message.content
-            model_used = response.model
+            model_used = getattr(response, "model", self.model)
 
             logger.info(
                 "AI response generated successfully",
-                extra={"model": model_used, "message_length": len(user_message)},
+                extra={
+                    "provider": self.provider,
+                    "model": model_used,
+                    "message_length": len(user_message),
+                },
             )
 
             return AIResponse(reply=reply, model_used=model_used, success=True)
 
         except openai.RateLimitError:
-            logger.error("OpenAI rate limit exceeded")
+            logger.error("%s rate limit exceeded", self.provider)
             return AIResponse(
                 reply="",
                 model_used=self.model,
@@ -103,12 +142,12 @@ class AITeacherService:
                 error="AI service is temporarily busy. Please try again in a moment.",
             )
         except openai.AuthenticationError:
-            logger.error("OpenAI authentication failed - check API key")
+            logger.error("%s authentication failed - check API key", self.provider)
             return AIResponse(
                 reply="",
                 model_used=self.model,
                 success=False,
-                error="AI service configuration error. Please contact support.",
+                error="AI service configuration error. Please check the API key.",
             )
         except Exception as e:
             logger.exception("Unexpected error in AI service", exc_info=e)

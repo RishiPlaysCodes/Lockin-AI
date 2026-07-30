@@ -75,13 +75,15 @@ class TestAITeacherService:
     """Tests for AITeacherService."""
 
     def test_is_not_configured_without_key(self, settings):
-        """Test service reports not configured without API key."""
+        """Test service reports not configured without any API key."""
+        settings.GEMINI_API_KEY = ""
         settings.OPENAI_API_KEY = ""
         service = AITeacherService()
         assert service.is_configured() is False
 
     def test_mock_response_without_key(self, settings):
-        """Test mock response when API key not set."""
+        """Test mock response when no API key is set."""
+        settings.GEMINI_API_KEY = ""
         settings.OPENAI_API_KEY = ""
         service = AITeacherService()
         result = service.get_response("Hello")
@@ -90,23 +92,50 @@ class TestAITeacherService:
         assert "Focus Guardian" in result.reply
 
     @patch("core.services.ai_service.openai")
-    def test_successful_api_call(self, mock_openai, settings):
-        """Test successful OpenAI API call."""
+    def test_successful_openai_call(self, mock_openai, settings):
+        """Test successful OpenAI API call (when only OpenAI key is set)."""
+        settings.GEMINI_API_KEY = ""
         settings.OPENAI_API_KEY = "test-key"
-        
-        # Mock the OpenAI response
+
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "Test AI response"
         mock_response.model = "gpt-4o-mini"
-        
+
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai.OpenAI.return_value = mock_client
 
         service = AITeacherService()
         result = service.get_response("What is Python?")
-        
+
         assert result.success is True
         assert result.reply == "Test AI response"
         assert result.model_used == "gpt-4o-mini"
+
+    @patch("core.services.ai_service.openai")
+    def test_gemini_takes_priority(self, mock_openai, settings):
+        """Test Gemini is used when both keys are set (free tier priority)."""
+        settings.GEMINI_API_KEY = "gemini-test-key"
+        settings.OPENAI_API_KEY = "openai-test-key"
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Gemini reply"
+        mock_response.model = "gemini-2.0-flash"
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_response
+        mock_openai.OpenAI.return_value = mock_client
+
+        service = AITeacherService()
+        assert service.provider == "gemini"
+
+        result = service.get_response("What is Python?")
+        assert result.success is True
+        assert result.reply == "Gemini reply"
+
+        # Verify the client was created with Gemini's base_url
+        _, kwargs = mock_openai.OpenAI.call_args
+        assert kwargs["api_key"] == "gemini-test-key"
+        assert "base_url" in kwargs
