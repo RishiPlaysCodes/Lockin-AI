@@ -89,20 +89,33 @@ else:
         }
     }
 
-# Cache - Redis for production
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/0"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    }
-}
+# Cache configuration
+# Use Redis if REDIS_URL is provided; otherwise fall back to local memory
+# cache so the app runs fine on platforms without Redis (e.g. Render free tier).
+REDIS_URL = os.getenv("REDIS_URL", "")
 
-# Session backend using cache
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }
+    # Store sessions in the (fast) Redis cache when available.
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "focus-guardian-cache",
+        }
+    }
+    # Without Redis, keep sessions in the database (reliable, no extra service).
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
