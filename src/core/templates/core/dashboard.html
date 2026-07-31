@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Focus Guardian AI</title>
+    <meta name="theme-color" content="#050510">
+    <link rel="manifest" href="{% static 'core/manifest.json' %}">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body>
+    <div class="app-shell">
+        <nav class="navbar">
+            <a href="/dashboard/" class="brand">
+                <span class="brand-icon">&#9889;</span>
+                Focus Guardian
+            </a>
+            <div class="nav-actions">
+                <span class="nav-user" id="nav-user"></span>
+                <button class="btn btn-glass" id="logout-btn" type="button">Logout</button>
+            </div>
+        </nav>
+
+        <main class="container">
+            <h1 class="page-title" id="greeting">Welcome back</h1>
+            <p class="page-sub">Your focus performance at a glance.</p>
+
+            <div class="stats-row">
+                <div class="stat-card glass">
+                    <div class="icon">&#9889;</div>
+                    <div class="label">Focus Score</div>
+                    <div class="value" id="s-score">&mdash;</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="icon">&#9201;</div>
+                    <div class="label">Study Time</div>
+                    <div class="value" id="s-time">&mdash;</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="icon">&#128293;</div>
+                    <div class="label">Streak</div>
+                    <div class="value" id="s-streak">&mdash;</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="icon">&#127919;</div>
+                    <div class="label">Sessions</div>
+                    <div class="value" id="s-sessions">&mdash;</div>
+                </div>
+            </div>
+
+            <div class="grid-actions">
+                <a href="/timer/" class="btn btn-glow btn-lg">&#9654;&ensp;Start Focus Session</a>
+                <a href="/chat/" class="btn btn-glass btn-lg">&#129302;&ensp;AI Teacher</a>
+            </div>
+
+            <div class="glass-strong" style="padding:24px; border-radius:var(--radius);">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="section-title" style="margin:0;">Recent Sessions</h2>
+                </div>
+                <div id="sessions-box"><div class="spinner spinner-lg"></div></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'core/js/app.js' %}"></script>
+    <script>
+        if (!FG.Auth.requireAuth()) {}
+        document.getElementById("logout-btn").addEventListener("click", () => FG.Auth.logout());
+
+        function fmt(iso) { try { return new Date(iso).toLocaleString(undefined, { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" }); } catch(_) { return iso; } }
+
+        (async () => {
+            const p = await FG.apiFetch("/profile/");
+            if (p.ok && p.data) {
+                const n = p.data.username || "";
+                document.getElementById("nav-user").textContent = n;
+                document.getElementById("greeting").textContent = n ? "Welcome, " + n : "Welcome back";
+                document.getElementById("s-score").textContent = p.data.focus_score;
+                document.getElementById("s-time").textContent = p.data.total_study_time_formatted || "0h 0m";
+                document.getElementById("s-streak").textContent = (p.data.streak_days || 0) + "d";
+            }
+        })();
+
+        (async () => {
+            const s = await FG.apiFetch("/reports/stats/");
+            if (s.ok && s.data) document.getElementById("s-sessions").textContent = s.data.total_sessions ?? 0;
+        })();
+
+        (async () => {
+            const box = document.getElementById("sessions-box");
+            const r = await FG.apiFetch("/reports/study/");
+            if (!r.ok) { box.innerHTML = '<div class="empty-state"><div class="emoji">&#9888;</div>Could not load sessions.</div>'; return; }
+            const list = r.data || [];
+            if (!list.length) { box.innerHTML = '<div class="empty-state"><div class="emoji">&#128218;</div>No sessions yet. Start your first focus session!</div>'; return; }
+            let html = '<div class="session-list">';
+            list.forEach(s => {
+                html += `<div class="session-item"><div class="session-meta"><span class="session-date">${FG.escapeHtml(fmt(s.start_time))}</span><span class="session-type">${FG.escapeHtml(s.session_type || "session")}</span></div><div class="flex gap-2"><span class="badge badge-cyan">${FG.escapeHtml(s.duration || "-")}</span><span class="badge badge-pink">${s.distractions_count ?? 0} dist.</span></div></div>`;
+            });
+            html += '</div>';
+            box.innerHTML = html;
+        })();
+    </script>
+</body>
+</html>

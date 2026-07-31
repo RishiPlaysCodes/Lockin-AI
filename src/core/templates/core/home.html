@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Guardian AI</title>
+    <meta name="description" content="AI-powered focus tracking and study assistant. Stay focused, study smarter.">
+    <meta name="theme-color" content="#050510">
+    <link rel="manifest" href="{% static 'core/manifest.json' %}">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-box glass-strong">
+            <div class="auth-header">
+                <div class="brand-icon">&#9889;</div>
+                <h1>Focus Guardian AI</h1>
+                <p>Your AI-powered study companion</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" id="tab-login" type="button" onclick="switchTab('login')">Sign in</button>
+                <button class="tab" id="tab-signup" type="button" onclick="switchTab('signup')">Create account</button>
+            </div>
+
+            <div id="msg" class="alert hidden"></div>
+
+            <!-- Login -->
+            <form id="login-form" autocomplete="on">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input class="form-input" type="text" id="l-user" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input class="form-input" type="password" id="l-pass" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn btn-glow btn-block btn-lg" id="l-btn">Sign in</button>
+            </form>
+
+            <!-- Signup -->
+            <form id="signup-form" class="hidden" autocomplete="on">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input class="form-input" type="text" id="s-user" autocomplete="username" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input class="form-input" type="email" id="s-email" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input class="form-input" type="password" id="s-pass" autocomplete="new-password" required minlength="10">
+                    <div class="form-hint">Minimum 10 characters, not entirely numeric.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm password</label>
+                    <input class="form-input" type="password" id="s-pass2" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="btn btn-glow btn-block btn-lg" id="s-btn">Create account</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'core/js/app.js' %}"></script>
+    <script>
+        if (FG.Auth.isAuthenticated()) window.location.replace("/dashboard/");
+
+        const msgEl = document.getElementById("msg");
+        function showMsg(t, type) { msgEl.textContent = t; msgEl.className = "alert alert-" + type; }
+        function hideMsg() { msgEl.className = "alert hidden"; }
+
+        function switchTab(t) {
+            document.getElementById("tab-login").classList.toggle("active", t === "login");
+            document.getElementById("tab-signup").classList.toggle("active", t === "signup");
+            document.getElementById("login-form").classList.toggle("hidden", t !== "login");
+            document.getElementById("signup-form").classList.toggle("hidden", t !== "signup");
+            hideMsg();
+        }
+
+        function spin(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+        function unspin(btn, label) { btn.disabled = false; btn.textContent = label; }
+
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault(); hideMsg();
+            const btn = document.getElementById("l-btn"); spin(btn);
+            const r = await FG.apiFetch("/auth/token/", {
+                method: "POST",
+                body: JSON.stringify({ username: document.getElementById("l-user").value.trim(), password: document.getElementById("l-pass").value })
+            });
+            if (r.ok && r.data.access) {
+                FG.Auth.setTokens(r.data.access, r.data.refresh);
+                window.location.replace("/dashboard/");
+            } else {
+                showMsg(r.status === 401 ? "Invalid username or password." : FG.extractError(r.data), "danger");
+                unspin(btn, "Sign in");
+            }
+        });
+
+        document.getElementById("signup-form").addEventListener("submit", async (e) => {
+            e.preventDefault(); hideMsg();
+            const p1 = document.getElementById("s-pass").value, p2 = document.getElementById("s-pass2").value;
+            if (p1 !== p2) { showMsg("Passwords do not match.", "danger"); return; }
+            const btn = document.getElementById("s-btn"); spin(btn);
+            const r = await FG.apiFetch("/auth/register/", {
+                method: "POST",
+                body: JSON.stringify({
+                    username: document.getElementById("s-user").value.trim(),
+                    email: document.getElementById("s-email").value.trim(),
+                    password: p1, password_confirm: p2
+                })
+            });
+            if (r.ok && r.data.tokens) {
+                FG.Auth.setTokens(r.data.tokens.access, r.data.tokens.refresh);
+                window.location.replace("/dashboard/");
+            } else {
+                showMsg(FG.extractError(r.data, "Could not create account."), "danger");
+                unspin(btn, "Create account");
+            }
+        });
+    </script>
+</body>
+</html>

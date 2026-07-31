@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Teacher - Focus Guardian AI</title>
+    <meta name="theme-color" content="#050510">
+    <link rel="manifest" href="{% static 'core/manifest.json' %}">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body>
+    <div class="app-shell">
+        <nav class="navbar">
+            <a href="/dashboard/" class="brand">
+                <span class="brand-icon">&#9889;</span>
+                Focus Guardian
+            </a>
+            <div class="nav-actions">
+                <a href="/dashboard/" class="btn btn-glass">&#8592; Dashboard</a>
+            </div>
+        </nav>
+
+        <main class="container">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="brand-icon" style="width:42px;height:42px;font-size:1.3rem;">&#129302;</div>
+                <div>
+                    <h1 class="page-title" style="font-size:1.4rem;">AI Study Teacher</h1>
+                    <p class="page-sub" style="margin:0;font-size:0.85rem;">Ask anything — concepts, study tips, motivation.</p>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-box">
+                    <div class="msg msg-ai">Hey! I'm your AI Study Teacher. Ask me to explain a topic, share study techniques, or give you a pep talk. I'm here to help you succeed! &#128640;</div>
+                </div>
+                <div class="chat-input-bar">
+                    <input class="form-input" id="input" type="text" placeholder="Ask your question..." maxlength="2000" autocomplete="off">
+                    <button class="btn btn-glow" id="send-btn">Send</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'core/js/app.js' %}"></script>
+    <script>
+        if (!FG.Auth.requireAuth()) {}
+
+        const box = document.getElementById("chat-box");
+        const input = document.getElementById("input");
+        const sendBtn = document.getElementById("send-btn");
+
+        function addMsg(text, who) {
+            const d = document.createElement("div");
+            d.className = "msg " + (who === "user" ? "msg-user" : "msg-ai");
+            d.textContent = text;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
+        }
+        function showTyping() {
+            const d = document.createElement("div");
+            d.className = "msg msg-typing"; d.id = "typing";
+            d.textContent = "Thinking...";
+            box.appendChild(d); box.scrollTop = box.scrollHeight;
+        }
+        function removeTyping() { const t = document.getElementById("typing"); if (t) t.remove(); }
+
+        async function send() {
+            const msg = input.value.trim();
+            if (!msg) return;
+            addMsg(msg, "user");
+            input.value = ""; input.disabled = true; sendBtn.disabled = true;
+            showTyping();
+
+            const r = await FG.apiFetch("/ai-teacher/", { method: "POST", body: JSON.stringify({ message: msg }) });
+            removeTyping();
+
+            if (r.ok && r.data && r.data.reply) {
+                addMsg(r.data.reply, "ai");
+            } else if (r.status === 429) {
+                addMsg("Slow down! Too many messages. Wait a moment and try again.", "ai");
+            } else {
+                addMsg(FG.extractError(r.data, "Sorry, I could not respond right now."), "ai");
+            }
+            input.disabled = false; sendBtn.disabled = false; input.focus();
+        }
+
+        sendBtn.addEventListener("click", send);
+        input.addEventListener("keypress", (e) => { if (e.key === "Enter") send(); });
+        input.focus();
+    </script>
+</body>
+</html>

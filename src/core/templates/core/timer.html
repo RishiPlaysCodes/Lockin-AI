@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Timer - Focus Guardian AI</title>
+    <meta name="theme-color" content="#050510">
+    <link rel="manifest" href="{% static 'core/manifest.json' %}">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body>
+    <div class="app-shell">
+        <nav class="navbar">
+            <a href="/dashboard/" class="brand">
+                <span class="brand-icon">&#9889;</span>
+                Focus Guardian
+            </a>
+            <div class="nav-actions">
+                <a href="/dashboard/" class="btn btn-glass">&#8592; Dashboard</a>
+            </div>
+        </nav>
+
+        <main class="container">
+            <div class="text-center mb-4">
+                <h1 class="page-title">Focus Session</h1>
+                <p class="page-sub" id="status-text">Ready — 25 minute Pomodoro</p>
+            </div>
+
+            <div class="timer-center">
+                <div class="timer-ring">
+                    <svg width="300" height="300" viewBox="0 0 300 300">
+                        <defs>
+                            <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00f5d4"/>
+                                <stop offset="50%" stop-color="#9b5de5"/>
+                                <stop offset="100%" stop-color="#f15bb5"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="track" cx="150" cy="150" r="130"/>
+                        <circle class="progress" id="ring" cx="150" cy="150" r="130"
+                                stroke-dasharray="816.8" stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="timer-time" id="timer">25:00</div>
+                </div>
+
+                <div class="timer-controls">
+                    <button class="btn btn-glow btn-lg" id="start-btn">&#9654;&ensp;Start</button>
+                    <button class="btn btn-danger btn-lg hidden" id="stop-btn">&#9632;&ensp;End Session</button>
+                </div>
+
+                <div class="timer-info glass">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); font-weight:600;">Distractions</div>
+                            <div style="font-size:1.8rem; font-weight:800; color:var(--neon-pink);" id="d-count">0</div>
+                        </div>
+                        <button class="btn btn-glass" id="d-btn" disabled>+ Log Distraction</button>
+                    </div>
+                    <p class="form-hint" style="margin-top:12px;">Tab switches are automatically tracked as distractions.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'core/js/app.js' %}"></script>
+    <script>
+        if (!FG.Auth.requireAuth()) {}
+
+        const TOTAL = 25 * 60;
+        const CIRC = 2 * Math.PI * 130;
+        let timeLeft = TOTAL, interval = null, active = false, distCount = 0;
+
+        const timerEl = document.getElementById("timer");
+        const ring = document.getElementById("ring");
+        const startBtn = document.getElementById("start-btn");
+        const stopBtn = document.getElementById("stop-btn");
+        const dBtn = document.getElementById("d-btn");
+        const dCountEl = document.getElementById("d-count");
+        const statusEl = document.getElementById("status-text");
+
+        ring.setAttribute("stroke-dasharray", CIRC.toFixed(1));
+
+        function render() {
+            const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+            timerEl.textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+            const pct = (TOTAL - timeLeft) / TOTAL;
+            ring.setAttribute("stroke-dashoffset", (CIRC * (1 - pct)).toFixed(1));
+        }
+
+        async function start() {
+            startBtn.disabled = true;
+            const r = await FG.apiFetch("/sessions/start/", { method: "POST", body: JSON.stringify({ session_type: "pomodoro", planned_duration_minutes: 25 }) });
+            if (!r.ok) { FG.toast(FG.extractError(r.data, "Could not start."), "error"); startBtn.disabled = false; return; }
+            active = true; distCount = 0; dCountEl.textContent = "0"; timeLeft = TOTAL; render();
+            startBtn.classList.add("hidden"); stopBtn.classList.remove("hidden"); dBtn.disabled = false;
+            statusEl.textContent = "In progress — stay focused!";
+            FG.toast("Session started. You've got this!", "success");
+            interval = setInterval(tick, 1000);
+        }
+
+        function tick() { if (timeLeft > 0) { timeLeft--; render(); } else { FG.toast("Time's up!", "success"); end(); } }
+
+        async function end() {
+            clearInterval(interval); stopBtn.disabled = true;
+            await FG.apiFetch("/sessions/end/", { method: "POST" });
+            active = false;
+            FG.toast("Session complete! Redirecting...", "success");
+            setTimeout(() => window.location.href = "/dashboard/", 1200);
+        }
+
+        async function logDist(name, type) {
+            if (!active) return;
+            distCount++; dCountEl.textContent = distCount;
+            const r = await FG.apiFetch("/distractions/", { method: "POST", body: JSON.stringify({ app_name: name, distraction_type: type }) });
+            if (!r.ok) { distCount--; dCountEl.textContent = distCount; }
+        }
+
+        startBtn.addEventListener("click", start);
+        stopBtn.addEventListener("click", end);
+        dBtn.addEventListener("click", () => { logDist("Manual", "manual"); FG.toast("Distraction logged.", "info", 1500); });
+
+        document.addEventListener("visibilitychange", () => { if (document.hidden && active) logDist("Tab Switch", "visibility_change"); });
+        window.addEventListener("beforeunload", (e) => { if (active) { e.preventDefault(); e.returnValue = ""; } });
+
+        render();
+    </script>
+</body>
+</html>

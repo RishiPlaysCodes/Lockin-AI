@@ -1,0 +1,250 @@
+# Focus Guardian AI (LockIn AI)
+
+**Enterprise-grade focus & study session tracking with AI-powered coaching.**
+
+Focus Guardian AI helps students and professionals stay focused during study/work sessions by tracking distractions, providing AI-powered coaching, and generating insights about focus patterns.
+
+---
+
+## Features
+
+- **JWT Authentication** - Secure token-based authentication with refresh tokens
+- **Focus Sessions** - Start, track, and analyze study/work sessions (Pomodoro, Short, Long, Custom)
+- **Distraction Tracking** - Automatic and manual distraction logging with focus score impact
+- **AI Teacher** - OpenAI-powered study companion for explanations, tips, and motivation
+- **Study Reports** - Detailed analytics on sessions, distractions, and streaks
+- **Health Monitoring** - Built-in health check endpoints for infrastructure monitoring
+- **API Documentation** - Auto-generated OpenAPI/Swagger docs at `/api/docs/`
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend | Django 5.1+ / Django REST Framework |
+| Authentication | JWT (Simple JWT) |
+| Database | PostgreSQL 16 (SQLite for dev) |
+| Cache | Redis 7 |
+| AI | OpenAI GPT-4o-mini |
+| API Docs | drf-spectacular (OpenAPI 3.0) |
+| Deployment | Google Cloud Run (Free Tier) |
+| CI/CD | GitHub Actions |
+| Monitoring | django-health-check, structured JSON logging |
+
+---
+
+## Quick Start (VS Code)
+
+## Runs on Everything
+
+**Windows | macOS | Linux | Android (Termux)** — one universal launcher handles it all.
+
+> **Detailed per-platform guide:** [docs/CROSS_PLATFORM.md](docs/CROSS_PLATFORM.md)
+
+### The One-Command Way (Any Platform)
+
+After installing Python 3.11+ and cloning the repo:
+
+```bash
+git clone https://github.com/RishiPlaysCodes/Lockin-AI.git
+cd Lockin-AI
+python run.py          # (use python3 run.py on Mac/Linux/Termux)
+```
+
+That's it! `run.py` auto-detects your OS, creates a virtual environment, installs
+dependencies, runs migrations, seeds demo data, and starts the server. It even
+prints a **Network URL** you can open on your phone (same WiFi).
+
+**Platform-specific launchers** (do the same thing):
+
+| Platform | Command |
+|----------|---------|
+| Windows | Double-click **`run.bat`** or run `.\run.ps1` |
+| macOS / Linux | `./run.sh` |
+| Android (Termux) | `python run.py` |
+
+**Launcher sub-commands:** `setup`, `serve`, `test`, `seed`
+(e.g. `python run.py serve` or `run.bat test`)
+
+Then open:
+- **API Docs:** http://127.0.0.1:8000/api/docs/
+- **Admin:** http://127.0.0.1:8000/admin/
+- **Health:** http://127.0.0.1:8000/health/
+
+---
+
+### Manual Setup (if you prefer step-by-step)
+
+> **Full detailed guide:** [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
+
+```bash
+# 1. Virtual Environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 2. Install
+pip install -r requirements/development.txt
+
+# 3. Configure
+cp .env.example .env      # Windows: copy .env.example .env
+
+# 4. Migrate & Seed
+cd src
+python manage.py migrate
+python manage.py seed_data   # Creates demo user: demo / DemoPass123!
+python manage.py createsuperuser
+
+# 5. Run
+python manage.py runserver
+```
+
+---
+
+## Running Tests
+
+```bash
+# All tests
+pytest
+
+# With coverage
+pytest --cov=core --cov-report=term-missing
+
+# Specific tests
+pytest tests/core/test_api.py -v
+pytest tests/integration/test_workflows.py -v
+```
+
+---
+
+## Deploy Online for FREE
+
+### Option 1: Render.com (Easiest — No Credit Card) ⭐ Recommended
+
+> **Full beginner guide:** [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md)
+
+The repo includes a `render.yaml` blueprint, so deployment is nearly one-click:
+1. Push code to GitHub (already done)
+2. Sign up at [render.com](https://render.com) with GitHub (no card needed)
+3. Go to [Blueprints](https://dashboard.render.com/blueprints) → New Blueprint Instance
+4. Select your repo → Apply
+
+Render auto-creates the web service + PostgreSQL, runs migrations, and gives you a
+live URL like `https://focus-guardian.onrender.com` — open it on any device.
+
+### Option 2: Google Cloud Run (Free Tier, needs a card on file)
+
+> **Full step-by-step guide:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+Always Free Tier: 2M requests/month, 180K vCPU-seconds, 360K GiB-seconds.
+
+```bash
+gcloud run deploy focus-guardian --source=. --region=us-central1 \
+  --allow-unauthenticated --memory=512Mi \
+  --set-env-vars="DJANGO_SETTINGS_MODULE=focus_guardian.settings.production"
+```
+
+---
+
+## Test on Phone
+
+1. Run `python manage.py runserver 0.0.0.0:8000`
+2. Find your PC's IP (e.g., `192.168.1.5`)
+3. On phone: open `http://192.168.1.5:8000/api/docs/`
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register/` | Register new user |
+| POST | `/api/v1/auth/token/` | Get JWT tokens (login) |
+| POST | `/api/v1/auth/token/refresh/` | Refresh access token |
+| POST | `/api/v1/auth/logout/` | Logout (blacklist token) |
+| GET | `/api/v1/profile/` | Get user profile |
+| PATCH | `/api/v1/profile/` | Update profile settings |
+| POST | `/api/v1/sessions/start/` | Start focus session |
+| POST | `/api/v1/sessions/end/` | End active session |
+| GET | `/api/v1/sessions/` | List all sessions |
+| POST | `/api/v1/distractions/` | Log distraction |
+| GET | `/api/v1/reports/study/` | Get study report |
+| GET | `/api/v1/reports/stats/` | Get user statistics |
+| POST | `/api/v1/ai-teacher/` | Chat with AI teacher |
+
+---
+
+## Project Structure
+
+```
+Lockin-AI/
+├── src/                          # Application source code
+│   ├── manage.py                 # Django management script
+│   ├── focus_guardian/           # Project configuration
+│   │   └── settings/            # Environment-specific settings
+│   │       ├── base.py          # Shared settings
+│   │       ├── development.py   # Dev (SQLite, DEBUG=True)
+│   │       ├── production.py    # Production (PostgreSQL, security)
+│   │       └── testing.py       # Test (in-memory SQLite, fast)
+│   └── core/                    # Main application
+│       ├── api/v1/              # API views and URL routing
+│       ├── services/            # Business logic (session, AI)
+│       ├── exceptions/          # Custom error handling
+│       ├── middleware/          # Request logging, JSON formatter
+│       ├── management/commands/ # seed_data command
+│       ├── models.py            # Data models
+│       ├── serializers.py       # API serializers
+│       └── admin.py             # Admin panel config
+├── tests/                       # Test suite (40+ tests)
+├── docs/                        # Documentation
+│   ├── LOCAL_SETUP.md           # VS Code testing guide
+│   ├── CROSS_PLATFORM.md        # Windows/Mac/Linux/Android guide
+│   └── DEPLOYMENT.md            # Google Cloud deployment guide
+├── config/nginx/                # Nginx config (Docker deploy)
+├── requirements/                # Dependencies (base/dev/prod)
+├── run.py                       # Universal cross-platform launcher
+├── run.sh                       # Mac/Linux/Termux launcher
+├── run.bat                      # Windows CMD launcher (double-click)
+├── run.ps1                      # Windows PowerShell launcher
+├── Dockerfile                   # Production container
+├── docker-compose.yml           # Full stack (Docker)
+├── Makefile                     # Developer commands
+├── pyproject.toml               # Linting/testing config
+└── .github/workflows/ci.yml    # CI/CD pipeline
+```
+
+---
+
+## Using Makefile
+
+```bash
+make help           # Show all commands
+make install        # Install dependencies
+make dev            # Start dev server
+make test           # Run tests
+make test-cov       # Tests with coverage
+make lint           # Run linters
+make format         # Auto-format code
+make migrate        # Run migrations
+make docker-up      # Start with Docker
+```
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests (`pytest`)
+4. Commit your changes
+5. Push and open a Pull Request
+
+---
+
+## License
+
+This project is private. All rights reserved.
+
+---
+
+Built with Django + DRF + OpenAI | Deployed on Google Cloud Run
