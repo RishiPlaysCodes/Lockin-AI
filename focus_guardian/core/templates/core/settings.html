@@ -1,0 +1,395 @@
+{% extends "core/base.html" %}
+{% load custom_filters %}
+
+{% block title %}Settings - Focus Guardian AI{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-page { max-width: 900px; }
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--fg-text-muted);
+    margin-bottom: 1rem;
+    padding-left: 0.25rem;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    gap: 1rem;
+}
+
+.setting-row:last-child { border-bottom: none; }
+
+.setting-info { flex: 1; }
+.setting-info .setting-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.setting-info .setting-desc {
+    font-size: 0.75rem;
+    color: var(--fg-text-muted);
+}
+
+.setting-control {
+    flex-shrink: 0;
+}
+
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+    margin: 0 auto 1rem;
+}
+
+.account-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.account-info-item {
+    background: rgba(15,23,42,0.4);
+    border: 1px solid var(--fg-card-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.account-info-item .ai-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.account-info-item .ai-lbl {
+    font-size: 0.68rem;
+    color: var(--fg-text-muted);
+    text-transform: uppercase;
+}
+
+.danger-zone {
+    border: 1px solid rgba(255,107,107,0.2);
+    background: rgba(255,107,107,0.03);
+}
+
+/* Toggle switch for settings */
+.settings-toggle {
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.settings-toggle.on { background: var(--fg-success); }
+.settings-toggle.off { background: rgba(255,255,255,0.12); }
+
+.settings-toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    transition: left 0.3s;
+}
+
+.settings-toggle.on::after { left: 23px; }
+.settings-toggle.off::after { left: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1><i class="bi bi-gear-fill me-2" style="color: var(--fg-primary);"></i>Settings</h1>
+            <p>Manage your profile, preferences, and account</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Profile & Account -->
+        <div class="col-lg-5">
+            <!-- Profile Card -->
+            <div class="fg-card mb-3 animate-in">
+                <div class="card-body text-center" style="padding: 2rem 1.5rem;">
+                    <div class="profile-avatar-large" style="background: {{ profile.avatar_color }};">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                    <h5 style="font-weight: 700; margin-bottom: 0.25rem;">{{ user.username }}</h5>
+                    <p style="font-size: 0.82rem; color: var(--fg-text-muted);">{{ user.email }}</p>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <span class="fg-badge fg-badge-primary">{{ profile.level }}</span>
+                        <span class="fg-badge fg-badge-success">{{ profile.focus_score }} pts</span>
+                    </div>
+                    {% if profile.bio %}
+                    <p style="font-size: 0.82rem; color: var(--fg-text-muted); font-style: italic;">"{{ profile.bio }}"</p>
+                    {% endif %}
+
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <div class="ai-val text-gradient">{{ total_sessions }}</div>
+                            <div class="ai-lbl">Sessions</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="ai-val" style="color: var(--fg-secondary);">{{ profile.total_study_hours }}h</div>
+                            <div class="ai-lbl">Study Time</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="ai-val" style="color: var(--fg-warning);">{{ total_messages }}</div>
+                            <div class="ai-lbl">AI Chats</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="ai-val" style="color: var(--fg-success);">{{ member_since|date:"M Y" }}</div>
+                            <div class="ai-lbl">Member Since</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Actions -->
+            <div class="fg-card mb-3 animate-in">
+                <div class="card-body">
+                    <h6 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-download me-2" style="color: var(--fg-secondary);"></i>Data</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="export_data">
+                        <button type="submit" class="btn-fg-outline w-100 mb-2" style="padding: 0.7rem;">
+                            <i class="bi bi-file-earmark-arrow-down me-1"></i> Export All Data (JSON)
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="fg-card danger-zone animate-in">
+                <div class="card-body">
+                    <h6 style="font-weight: 700; color: var(--fg-accent); margin-bottom: 0.5rem;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Danger Zone
+                    </h6>
+                    <p style="font-size: 0.78rem; color: var(--fg-text-muted); margin-bottom: 1rem;">
+                        Reset all stats. This will permanently delete all sessions, badges, and logs. This action cannot be undone.
+                    </p>
+                    <form method="post" onsubmit="return confirmReset(this);">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reset_stats">
+                        <input type="hidden" name="confirm_reset" id="confirm-reset-input" value="">
+                        <button type="submit" class="btn-fg-danger w-100" style="padding: 0.7rem;">
+                            <i class="bi bi-trash3 me-1"></i> Reset All Stats
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Settings -->
+        <div class="col-lg-7">
+            <!-- Profile Edit -->
+            <div class="settings-section animate-in">
+                <div class="settings-section-title">Profile Settings</div>
+                <div class="fg-card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+                        
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Email</div>
+                                <div class="setting-desc">Your account email address</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="email" name="email" class="form-control" value="{{ user.email }}" style="width: 220px;">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Bio</div>
+                                <div class="setting-desc">A short description about yourself</div>
+                            </div>
+                            <div class="setting-control">
+                                {{ profile_form.bio }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Avatar Color</div>
+                                <div class="setting-desc">Choose your profile color</div>
+                            </div>
+                            <div class="setting-control">
+                                {{ profile_form.avatar_color }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Daily Goal</div>
+                                <div class="setting-desc">Minutes you aim to study each day</div>
+                            </div>
+                            <div class="setting-control" style="width: 100px;">
+                                {{ profile_form.daily_goal_minutes }}
+                            </div>
+                        </div>
+
+                        <div class="card-body pt-0">
+                            <button type="submit" class="btn-fg-primary w-100" style="padding: 0.7rem;">
+                                <i class="bi bi-check-lg me-1"></i> Save Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Timer Preferences -->
+            <div class="settings-section animate-in">
+                <div class="settings-section-title">Timer Preferences</div>
+                <div class="fg-card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Timer Sound</div>
+                                <div class="setting-desc">Sound when timer completes</div>
+                            </div>
+                            <div class="setting-control" style="width: 140px;">
+                                {{ profile_form.timer_sound }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Break Duration</div>
+                                <div class="setting-desc">Default break between sessions (min)</div>
+                            </div>
+                            <div class="setting-control" style="width: 80px;">
+                                {{ profile_form.break_duration }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Auto-Start Breaks</div>
+                                <div class="setting-desc">Automatically start break timer after session</div>
+                            </div>
+                            <div class="setting-control">
+                                {{ profile_form.auto_start_breaks }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Motivational Quotes</div>
+                                <div class="setting-desc">Show quotes on dashboard</div>
+                            </div>
+                            <div class="setting-control">
+                                {{ profile_form.show_motivational_quotes }}
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Distraction Alerts</div>
+                                <div class="setting-desc">Show overlay when distracted</div>
+                            </div>
+                            <div class="setting-control">
+                                {{ profile_form.distraction_alerts }}
+                            </div>
+                        </div>
+
+                        <div class="card-body pt-0">
+                            <button type="submit" class="btn-fg-primary w-100" style="padding: 0.7rem;">
+                                <i class="bi bi-check-lg me-1"></i> Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="settings-section animate-in">
+                <div class="settings-section-title">Security</div>
+                <div class="fg-card">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Current Password</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="password" name="old_password" class="form-control" style="width: 220px;" required>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">New Password</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="password" name="new_password1" class="form-control" style="width: 220px;" required>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <div class="setting-label">Confirm New Password</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="password" name="new_password2" class="form-control" style="width: 220px;" required>
+                            </div>
+                        </div>
+
+                        <div class="card-body pt-0">
+                            <button type="submit" class="btn-fg-outline w-100" style="padding: 0.7rem;">
+                                <i class="bi bi-lock me-1"></i> Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmReset(form) {
+    const input = prompt('Type RESET to confirm deleting all your stats. This cannot be undone.');
+    if (input === 'RESET') {
+        document.getElementById('confirm-reset-input').value = 'RESET';
+        return true;
+    }
+    return false;
+}
+</script>
+{% endblock %}
